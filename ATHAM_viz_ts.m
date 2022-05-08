@@ -1,4 +1,4 @@
-function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, small_grid, density_overlay)
+function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, small_grid, density_overlay, quiver_overlay)
 %% before loop!
 % Setup plot windows
 % h = figure()
@@ -56,7 +56,13 @@ end
 ash_iso = get_viz_trac(tracer_name);
 
 % Vertical motion vector
+if quiver_overlay
+    u_vector = read_datafile(fn_data,'u');
+    v_vector = read_datafile(fn_data,'v');
+end
 w_vector = read_datafile(fn_data,'w');
+
+
 den_full = read_datafile(fn_data,'density');
 
 den = den_full(:,:,:,1);
@@ -73,7 +79,7 @@ den_full = remove_nans(den_full);
 time_arr = read_datafile(fn_data,'time') * 60; %convert mins to seconds
 time_num = find_timesteps(ash1);
 
-if density_overlay
+if density_overlay || quiver_overlay
     % Find indices of isovalue at each timestep
     idxs = find(ash_iso(:) < isovalue+.01 & ash_iso(:) > isovalue-.01);
         iso_clr_max = max(max(max(max(den_full(idxs)))));
@@ -131,6 +137,14 @@ for i = 1:time_num
         hold(ax2, 'on');
     end
 
+    u_i = u_vector(:,:,:,i);
+    v_i = v_vector(:,:,:,i);
+    w_i = w_vector(:,:,:,i);
+
+    if quiver_overlay
+        quiv_idxs = find(ash_iso(:,:,:,i) < isovalue+.01 & ash_iso(:,:,:,i) > isovalue-.01);
+        q = quiver3(xmg(quiv_idxs),ymg(quiv_idxs),zmg(quiv_idxs),u_i(quiv_idxs),v_i(quiv_idxs),w_i(quiv_idxs),4,'LineWidth',2.5);
+    end
     % Main plot lighting and camera setup
     set_lighting(ax1)
     set_cam(ax1, false, x, y, z, x_zoom_loc, y_zoom_loc)
