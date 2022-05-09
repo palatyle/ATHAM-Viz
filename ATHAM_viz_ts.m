@@ -1,10 +1,11 @@
-function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, small_grid, density_overlay, quiver_overlay)
+function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, small_grid, density_overlay, quiver_overlay, dep_calc)
 %% before loop!
 % Setup plot windows
 % h = figure()
 tic
 cd(fn)
 fn_data = 'atham_netCDF_MOV.nc';
+fn_dep = 'atham_netCDF_PIC.nc';
 
 ax1 = subplot(1,2,1);
 ax2 = subplot(1,2,2);
@@ -22,19 +23,25 @@ grid([ax1 ax2], 'minor')
 
 ash_names = find_num_trac(fn_data);
 
-% Read in ash tracers, multiply by scale factor and remove nans \
+% Read in ash tracers in g/kg, multiply by scale factor and remove nans \
 
-    
-
-
+   
 if sum(matches(ash_names, 'ash1')) == 1
     ash1 = read_datafile(fn_data,'ash1')*1000;
     ash1 = remove_nans(ash1);
+    if dep_calc
+        ash1_dep = read_datafile(fn_dep,'d_ash1')*1000;
+        ash1_dep = remove_nans(ash1_dep);
+    end
 end
     
 if sum(matches(ash_names, 'ash2')) == 1
     ash2 = read_datafile(fn_data,'ash2')*1000;
     ash2 = remove_nans(ash2);
+    if dep_calc
+        ash2_dep = read_datafile(fn_dep,'d_ash2')*1000;
+        ash2_dep = remove_nans(ash2_dep);
+    end
 else
     ash2 = zeros(size(ash1));
 end
@@ -42,6 +49,10 @@ end
 if sum(matches(ash_names, 'ash3')) == 1
     ash3 = read_datafile(fn_data,'ash3')*1000;
     ash3 = remove_nans(ash3);
+    if dep_calc
+        ash3_dep = read_datafile(fn_dep,'d_ash3')*1000;
+        ash3_dep = remove_nans(ash3_dep);
+    end
 else
     ash3 = zeros(size(ash1));
 end
@@ -49,6 +60,10 @@ end
 if sum(matches(ash_names, 'ash4')) == 1
     ash4 = read_datafile(fn_data,'ash4')*1000;
     ash4 = remove_nans(ash4);
+    if dep_calc
+        ash4_dep = read_datafile(fn_dep,'d_ash4')*1000;
+        ash4_dep = remove_nans(ash4_dep);
+    end
 else
     ash4 = zeros(size(ash1));
 end
@@ -119,6 +134,19 @@ for i = 1:time_num
     ash_threshold(ash_threshold < isovalue) = 0;
     % Ash 1
     % ash1_ts = ash1(:,:,:,timestep);
+
+    u_i = u_vector(:,:,:,i);
+    v_i = v_vector(:,:,:,i);
+    w_i = w_vector(:,:,:,i);
+
+    if quiver_overlay
+        quiv_idxs = find(ash_iso(:,:,:,i) < isovalue+.01 & ash_iso(:,:,:,i) > isovalue-.01);
+%         q1 = quiver3(ax1, xmg(quiv_idxs),ymg(quiv_idxs),zmg(quiv_idxs),u_i(quiv_idxs),v_i(quiv_idxs),w_i(quiv_idxs),4,'LineWidth',2.5);
+        hold(ax2,'on')
+%         streamline(ax2, xmg,ymg,zmg,u_i,v_i,w_i,xmg())
+        q = quiver3(ax2, xmg(quiv_idxs),ymg(quiv_idxs),zmg(quiv_idxs),u_i(quiv_idxs),v_i(quiv_idxs),w_i(quiv_idxs),2,'LineWidth',1);
+        q.Color = [0 0.4470 0.7410];
+    end
     if density_overlay
         p_ash = create_isosurf(ax1, xmg, ymg, zmg, ash_viz, isovalue, den_full(:,:,:,i));
         p_ash = change_patch_props(p_ash, false, color_min_max, ax1);
@@ -137,14 +165,7 @@ for i = 1:time_num
         hold(ax2, 'on');
     end
 
-    u_i = u_vector(:,:,:,i);
-    v_i = v_vector(:,:,:,i);
-    w_i = w_vector(:,:,:,i);
 
-    if quiver_overlay
-        quiv_idxs = find(ash_iso(:,:,:,i) < isovalue+.01 & ash_iso(:,:,:,i) > isovalue-.01);
-        q = quiver3(xmg(quiv_idxs),ymg(quiv_idxs),zmg(quiv_idxs),u_i(quiv_idxs),v_i(quiv_idxs),w_i(quiv_idxs),4,'LineWidth',2.5);
-    end
     % Main plot lighting and camera setup
     set_lighting(ax1)
     set_cam(ax1, false, x, y, z, x_zoom_loc, y_zoom_loc)
@@ -170,8 +191,12 @@ for i = 1:time_num
     % Calclulate mass flux through each grid point
     
     grid_mass_flux = mass_flux(x,y,row_x, row_y, plane_height, den_full, area_plane, w_vector, i);
-%     figure(2)
-%     surf(x(row_x),y(row_y),grid_mass_flux)
+
+    if dep_calc
+        mass_total(i) = grid_mass_sum(grid_mass_flux); 
+    end
+
+    
     % Calculate stability of plume
     [flux_ratio(i), stability(i)] = stability_calc(x,y,grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, i);
     
@@ -187,7 +212,7 @@ for i = 1:time_num
     create_gif(i, strcat(gif_str,'.gif'))
     delete(findall(gcf,'Type','light'))
     
-    patches = {p_ash p_ash_z};
+    patches = {p_ash p_ash_z q};
     for j = 1:length(patches)
         delete(patches{j})
     end
@@ -205,6 +230,15 @@ end
 
 % Calculate neutral buoyancy height
 [NBH, NBH_err] = NBH_calc(ash_threshold, x, y, z);
+
+if dep_calc
+    % Sum up final ash deposition
+    ash_dep_mass = planar_density2mass(ash1_dep(row_x,row_y),area_plane) + planar_density2mass(ash2_dep(row_x,row_y),area_plane) + planar_density2mass(ash3_dep(row_x,row_y),area_plane) + planar_density2mass(ash4_dep(row_x,row_y),area_plane);
+    
+    % Sum up total amount of ash passing through stabiltiy calc plane
+    
+    mass_plane_final = sum(mass_total); 
+end
 
 disp('Done visualizing in:')
 toc
@@ -344,7 +378,7 @@ function [ash_ts] = get_viz_trac(tracer_name)
     end 
 end
 
-    function p = create_isosurf(axnum, xmg, ymg, zmg, data, isovalue, den_ts)
+function p = create_isosurf(axnum, xmg, ymg, zmg, data, isovalue, den_ts)
     %{
     Returns a patch object of isosurface. Plots data onto axes axnum at
     the corresponding isovalue
@@ -371,8 +405,7 @@ end
     end
 end
 
-
-    function p = change_patch_props(p, ground, color, axnum)
+function p = change_patch_props(p, ground, color, axnum)
     %{
     Returns a patch object of isosurface. Changes properties of patch
     dependign on whether object is of ground or ash
@@ -394,13 +427,20 @@ end
         if exist('color','var')
             p.FaceColor='interp';
             p.EdgeColor='none';
+            if quiver_overlay
+                p.FaceAlpha = 0.5;
+            end
             colorbar(axnum)
             caxis(axnum,color)
             colormap(viridis())
         else
             p.FaceColor = [.3 .3 .3]; %grey
             p.EdgeColor = 'none';
-            p.FaceAlpha = 1;
+            if quiver_overlay
+                p.FaceAlpha = 0.5;
+            else
+                p.FaceAlpha = 1;
+            end
             p.SpecularStrength = .1;
             p.DiffuseStrength = .1;  
         end
@@ -597,6 +637,16 @@ function grid_mass_flux = mass_flux(x,y,row_x, row_y,plane_height, density, area
 %     h1 = figure;
 %     pcolor(grid_mass_flux)
 %     close(h1)
+end
+function mass_sum_ts = grid_mass_sum(grid_mass_flux)
+    
+    mass_sum_ts = sum(grid_mass_flux(:),'omitnan'); % mass sum in kgs
+end
+
+function final_dep_mass = planar_density2mass(dep,area_plane)
+    % multiply planar density by area then multiply by 1000 to convert from g/m^2 to kg
+    final_dep_mass_plane = (dep .* area_plane) / 1000; 
+    final_dep_mass = sum(final_dep_mass_plane(:),'omitnan');
 end
 
 function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, i)
