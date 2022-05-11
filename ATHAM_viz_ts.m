@@ -238,6 +238,8 @@ if dep_calc
     % Sum up total amount of ash passing through stabiltiy calc plane
     
     mass_plane_final = sum(mass_total); 
+
+    mass_plane_final/(mass_plane_final + ash_dep_mass)
 end
 
 disp('Done visualizing in:')
@@ -640,7 +642,7 @@ function grid_mass_flux = mass_flux(x,y,row_x, row_y,plane_height, density, area
 end
 function mass_sum_ts = grid_mass_sum(grid_mass_flux)
     
-    mass_sum_ts = sum(grid_mass_flux(:),'omitnan'); % mass sum in kgs
+    mass_sum_ts = sum(abs(grid_mass_flux(:)),'omitnan'); % mass sum in kgs
 end
 
 function final_dep_mass = planar_density2mass(dep,area_plane)
