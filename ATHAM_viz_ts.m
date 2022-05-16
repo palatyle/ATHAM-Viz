@@ -110,7 +110,11 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
-rad_dist_bool = get_rad_array(x,y,z,xmg,ymg,plane_height);
+% Get boolean array at plane height of volcano vs air
+rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
+
+% Get lower boolean array 
+rad_dist_bool_lower = get_rad_array(den,x,y,z,xmg,ymg,plane_height/2);
 
 rad_dist_bool = rad_dist_bool(row_x,row_y);
 % Density 
@@ -519,7 +523,7 @@ function set_figure_props(fontsize)
     end
 end
 
-function rad_dist_bool = get_rad_array(x,y,z,xmg,ymg,plane_height)
+function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
     % Find where volcano stops and air begins
     k=0;
     for i_func = (length(x)/2):length(x)
