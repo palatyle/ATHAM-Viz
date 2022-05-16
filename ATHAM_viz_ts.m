@@ -109,7 +109,8 @@ end
 % Calcualte area of every grid cell
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
-[plane_height, rad_dist_bool] = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
+plane_height = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
+rad_dist_bool = get_rad_array(x,y,z,xmg,ymg,plane_height);
 
 rad_dist_bool = rad_dist_bool(row_x,row_y);
 % Density 
@@ -518,7 +519,39 @@ function set_figure_props(fontsize)
     end
 end
 
-function [plane_height,rad_dist_bool] = find_plane_height(density,x,y,z,xmg,ymg,small_grid)
+function rad_dist_bool = get_rad_array(x,y,z,xmg,ymg,plane_height)
+    % Find where volcano stops and air begins
+    k=0;
+    for i_func = (length(x)/2):length(x)
+        k = k+1;
+        % Break loop when we encounter no nans (i.e., when we've reached air)
+        if squeeze(isnan(density(i_func,length(y)/2,plane_height))) == 0
+            outer_edge_x = k + 1;
+            break
+        end
+    end
+
+    % Find the threshold radius from center of domain to volcano/air interface
+    threshold_rad = abs(x((length(x)/2)) - x((length(x)/2) - outer_edge_x));
+
+    % Create array of distances from each point to center of domain at plane height
+    dist_from_center = sqrt((x(length(x)/2)- xmg(:,:,plane_height)).^2 + (y(length(y)/2)- ymg(:,:,plane_height)).^2);
+
+    % Create boolean array of grid cells that are within (1) or without (0) the threshold radius
+    rad_dist_bool = dist_from_center;
+    
+    for i_func = 1:length(x)
+        for j_func = 1:length(y)
+            if round(rad_dist_bool(i_func,j_func),2) <= round(threshold_rad,2)
+                rad_dist_bool(i_func,j_func) = 1;
+            else
+                rad_dist_bool(i_func,j_func) = 0;
+            end
+        end
+    end
+end
+
+function plane_height = find_plane_height(density,x,y,z,xmg,ymg,small_grid)
     %{
     Finds height point just above vent to place stabiltiy calculation vent.
     Counts up from bottom of domain untill reaching a height where there
@@ -544,34 +577,6 @@ function [plane_height,rad_dist_bool] = find_plane_height(density,x,y,z,xmg,ymg,
             break
         end
     end
-    k=0;
-    for i_func = (length(x)/2):length(x)
-        k = k+1;
-       if squeeze(isnan(density(i_func,length(y)/2,plane_height))) == 0
-           outer_edge_x = k + 1;
-           break
-       end
-    end
-    
-    threshold_rad = abs(x((length(x)/2)) - x((length(x)/2) - outer_edge_x));
- 
-    dist_from_center = sqrt((x(length(x)/2)- xmg(:,:,plane_height)).^2 + (y(length(y)/2)- ymg(:,:,plane_height)).^2);
-    
-    rad_dist_bool = dist_from_center;
-    
-    for i_func = 1:length(x)
-        for j_func = 1:length(y)
-            if round(rad_dist_bool(i_func,j_func),2) <= round(threshold_rad,2)
-                rad_dist_bool(i_func,j_func) = 1;
-            else
-                rad_dist_bool(i_func,j_func) = 0;
-            end
-        end
-    end
-    
-%     rad_dist_bool = zeros(dist_from_center);
-%     rad_dist_bool = dist_from_center(dist_from_center < threshold_rad);
-%     x_keep = 
 end
 
 function [row_x,row_y] = get_plane_extent(x,y)
@@ -642,7 +647,7 @@ function grid_mass_flux = mass_flux(x,y,row_x, row_y,plane_height, density, area
 end
 function mass_sum_ts = grid_mass_sum(grid_mass_flux)
     
-    mass_sum_ts = sum(abs(grid_mass_flux(:)),'omitnan'); % mass sum in kgs
+    mass_sum_ts = sum(grid_mass_flux(grid_mass_flux>0),'omitnan'); % mass sum in kgs
 end
 
 function final_dep_mass = planar_density2mass(dep,area_plane)
@@ -710,6 +715,8 @@ function p_height = new_find_plume_height(ash_viz, w_vector, z)
         [max_v,loc_max_v] = max(up_v(:));
     end
 end
+
+
 function plume_height = find_plume_height(ash_threshold,z)
     %{
     Finds the max plume height based on the isosurface being visualized 
