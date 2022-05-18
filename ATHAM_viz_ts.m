@@ -117,6 +117,7 @@ rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
 rad_dist_bool_lower = get_rad_array(den,x,y,z,xmg,ymg,plane_height/2);
 
 rad_dist_bool = rad_dist_bool(row_x,row_y);
+rad_dist_bool_lower = rad_dist_bool_lower(row_x,row_y);
 % Density 
 p_den = create_isosurf(ax1, xmg, ymg, zmg, remove_nans(den), .0005);
 p_den = change_patch_props(p_den, true);
@@ -203,7 +204,7 @@ for i = 1:time_num
 
     
     % Calculate stability of plume
-    [flux_ratio(i), stability(i)] = stability_calc(x,y,grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, i);
+    [flux_ratio(i), stability(i)] = stability_calc(x,y,grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i);
     
 
 %     pause
@@ -660,7 +661,7 @@ function final_dep_mass = planar_density2mass(dep,area_plane)
     final_dep_mass = sum(final_dep_mass_plane(:),'omitnan');
 end
 
-function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, i)
+function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i)
     %{
     Calculates stability based on mass flux through the plane along with
     ash concentrations
@@ -698,6 +699,12 @@ function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux, ash1, ash2
     inner = sum(ash_weighted_flux(rad_dist_bool==1 & ash_weighted_flux > 0),'omitnan');
 %     inner = sum(ash_weighted_flux(ash_weighted_flux > 0),'omitnan');
     outer = sum(ash_weighted_flux(rad_dist_bool==0 & ash_weighted_flux < 0),'omitnan');
+     
+    inner_GMF = sum(grid_mass_flux(rad_dist_bool==1 & grid_mass_flux > 0),'omitnan');
+    outer_GMF = sum(grid_mass_flux(rad_dist_bool==0 & grid_mass_flux < 0),'omitnan');
+
+    outer_lower_GMF = sum(grid_mass_flux(rad_dist_bool_lower==0 & grid_mass_flux < 0),'omitnan');
+    
     flux_ratio = abs(inner)/(abs(outer)+abs(inner));
     
     if flux_ratio > 0.80
