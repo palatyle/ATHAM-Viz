@@ -1,4 +1,4 @@
-function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,lat,small_grid)
+function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,lat,small_grid,density_overlay, quiver_overlay, dep_calc)
 
 % tracer_name = 'ash1';
 % isovalue = .001;
@@ -13,7 +13,7 @@ dirs = extractfield(dir_info,'folder')';
 output = {'Vent speed (m/s)','Wind Speed (m/s)','stability mean','stability med','stability SD','Max plume height (km)','Neutral Buoyancy Height (km)', 'NBH err (km)'};
 for i = 1:length(dirs)
     fn = dirs{i};
-    [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, small_grid);
+    [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, small_grid, density_overlay, quiver_overlay, dep_calc);
     split_dir = regexp(fn,filesep,'split');
     output_fn = split_dir{end};
     
