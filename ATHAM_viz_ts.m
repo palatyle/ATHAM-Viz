@@ -110,11 +110,26 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
+lower_plane = round(plane_height/4);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
 
 % Get lower boolean array 
-rad_dist_bool_lower = get_rad_array(den,x,y,z,xmg,ymg,plane_height/2);
+rad_dist_bool_lower = den(:,:,lower_plane);
+rad_dist_bool_lower(isnan(rad_dist_bool_lower)) = 0;
+rad_dist_bool_lower(rad_dist_bool_lower ~= 0) = 1;
+
+% Get horizontal extent of volcano base
+volc_base = den(:,:,2);
+volc_base(isnan(volc_base))= 0;
+volc_base(volc_base ~= 0)= 1;
+
+rad_dist_bool = rad_dist_bool + volc_base*2;
+
+rad_dist_bool_lower = rad_dist_bool_lower + volc_base;
+rad_dist_bool_lower(rad_dist_bool_lower==2) = 0;
+
+
 
 rad_dist_bool = rad_dist_bool(row_x,row_y);
 rad_dist_bool_lower = rad_dist_bool_lower(row_x,row_y);
@@ -198,13 +213,15 @@ for i = 1:time_num
     
     grid_mass_flux = mass_flux(x,y,row_x, row_y, plane_height, den_full, area_plane, w_vector, i);
 
+    grid_mass_flux_lower = mass_flux(x,y,row_x, row_y, lower_plane, den_full, area_plane, w_vector, i);
+
     if dep_calc
         mass_total(i) = grid_mass_sum(grid_mass_flux); 
     end
 
     
     % Calculate stability of plume
-    [flux_ratio(i), stability(i)] = stability_calc(x,y,grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i);
+    [flux_ratio(i), stability(i)] = stability_calc(x,y,grid_mass_flux, grid_mass_flux_lower, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i);
     
 
 %     pause
@@ -527,33 +544,35 @@ end
 function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
     % Find where volcano stops and air begins
     k=0;
-    for i_func = (length(x)/2):length(x)
+    all_nans_found = false;
+    [upper_x_bool, lower_x_bool, upper_y_bool, lower_y_bool] = deal(true);
+    while all_nans_found == false
         k = k+1;
-        % Break loop when we encounter no nans (i.e., when we've reached air)
-        if squeeze(isnan(density(i_func,length(y)/2,plane_height))) == 0
-            outer_edge_x = k + 1;
-            break
+        if isnan(density((length(x)/2)+k,length(y)/2,plane_height)) && upper_x_bool == true
+            upper_x = (length(x)/2)+(k-1);
+            upper_x_bool=false;
         end
+        if isnan(density((length(x)/2)-k,length(y)/2,plane_height)) && lower_x_bool == true
+            lower_x = (length(x)/2)-(k-1);
+            lower_x_bool=false;
+        end
+        if isnan(density(length(x)/2,(length(y)/2)+k,plane_height)) && upper_y_bool == true
+            upper_y = (length(y)/2)+(k-1);
+            upper_y_bool=false;
+        end
+        if isnan(density(length(x)/2,(length(y)/2)-k,plane_height)) && lower_y_bool == true
+            lower_y = (length(y)/2)-(k-1);
+            lower_y_bool=false;
+        end
+
+        if upper_x_bool == false && lower_x_bool == false && upper_y_bool == false && lower_y_bool == false
+            all_nans_found = true;
+        end
+
     end
 
-    % Find the threshold radius from center of domain to volcano/air interface
-    threshold_rad = abs(x((length(x)/2)) - x((length(x)/2) - outer_edge_x));
-
-    % Create array of distances from each point to center of domain at plane height
-    dist_from_center = sqrt((x(length(x)/2)- xmg(:,:,plane_height)).^2 + (y(length(y)/2)- ymg(:,:,plane_height)).^2);
-
-    % Create boolean array of grid cells that are within (1) or without (0) the threshold radius
-    rad_dist_bool = dist_from_center;
-    
-    for i_func = 1:length(x)
-        for j_func = 1:length(y)
-            if round(rad_dist_bool(i_func,j_func),2) <= round(threshold_rad,2)
-                rad_dist_bool(i_func,j_func) = 1;
-            else
-                rad_dist_bool(i_func,j_func) = 0;
-            end
-        end
-    end
+    rad_dist_bool = false(size(density(:,:,plane_height)));
+    rad_dist_bool(lower_x:upper_x,lower_y:upper_y) = true;
 end
 
 function plane_height = find_plane_height(density,x,y,z,xmg,ymg,small_grid)
@@ -661,7 +680,7 @@ function final_dep_mass = planar_density2mass(dep,area_plane)
     final_dep_mass = sum(final_dep_mass_plane(:),'omitnan');
 end
 
-function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i)
+function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux,grid_mass_flux_lower, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i)
     %{
     Calculates stability based on mass flux through the plane along with
     ash concentrations
@@ -703,9 +722,13 @@ function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux, ash1, ash2
     inner_GMF = sum(grid_mass_flux(rad_dist_bool==1 & grid_mass_flux > 0),'omitnan');
     outer_GMF = sum(grid_mass_flux(rad_dist_bool==0 & grid_mass_flux < 0),'omitnan');
 
-    outer_lower_GMF = sum(grid_mass_flux(rad_dist_bool_lower==0 & grid_mass_flux < 0),'omitnan');
+    outer_lower_GMF = sum(grid_mass_flux_lower(rad_dist_bool_lower==1 & grid_mass_flux_lower < 0),'omitnan');
     
-    flux_ratio = abs(inner)/(abs(outer)+abs(inner));
+    "upper, lower plane comparison"
+    flux_ratio = inner_GMF/(abs(outer_lower_GMF)+inner_GMF)
+    "upper plane comparison"
+    inner_GMF/(abs(outer_GMF)+inner_GMF)
+%     flux_ratio = abs(inner)/(abs(outer)+abs(inner));
     
     if flux_ratio > 0.80
         stability = 1; %stable
