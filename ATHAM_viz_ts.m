@@ -155,9 +155,10 @@ for i = 1:time_num
     ash_threshold(ash_threshold < isovalue) = 0;
     % Ash 1
     % ash1_ts = ash1(:,:,:,timestep);
-
-    u_i = u_vector(:,:,:,i);
-    v_i = v_vector(:,:,:,i);
+    if quiver_overlay
+        u_i = u_vector(:,:,:,i);
+        v_i = v_vector(:,:,:,i);
+    end
     w_i = w_vector(:,:,:,i);
 
     if quiver_overlay
