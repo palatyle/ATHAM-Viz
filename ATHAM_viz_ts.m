@@ -546,28 +546,52 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
     k=0;
     all_nans_found = false;
     [upper_x_bool, lower_x_bool, upper_y_bool, lower_y_bool] = deal(true);
+
     while all_nans_found == false
         k = k+1;
+        dist_away_from_cent = x((length(x)/2)+k) - x((length(x)/2));
+
         if isnan(density((length(x)/2)+k,length(y)/2,plane_height)) && upper_x_bool == true
             upper_x = (length(x)/2)+(k-1);
+            upper_x_bool=false;
+        elseif dist_away_from_cent >= .3 && upper_x_bool == true
+            upper_x = (length(x)/2)+(k+1);
             upper_x_bool=false;
         end
         if isnan(density((length(x)/2)-k,length(y)/2,plane_height)) && lower_x_bool == true
             lower_x = (length(x)/2)-(k-1);
             lower_x_bool=false;
+        elseif dist_away_from_cent >= .3 && lower_x_bool == true
+            lower_x = (length(x)/2)-(k+1);
+            lower_x_bool=false;
         end
         if isnan(density(length(x)/2,(length(y)/2)+k,plane_height)) && upper_y_bool == true
             upper_y = (length(y)/2)+(k-1);
+            upper_y_bool=false;
+        elseif dist_away_from_cent >= .3 && upper_y_bool == true
+            upper_y = (length(y)/2)+(k+1);
             upper_y_bool=false;
         end
         if isnan(density(length(x)/2,(length(y)/2)-k,plane_height)) && lower_y_bool == true
             lower_y = (length(y)/2)-(k-1);
             lower_y_bool=false;
+        elseif dist_away_from_cent >= .3 && lower_y_bool == true
+            lower_y = (length(y)/2)-(k+1);
+            lower_y_bool=false;            
         end
 
         if upper_x_bool == false && lower_x_bool == false && upper_y_bool == false && lower_y_bool == false
             all_nans_found = true;
         end
+
+
+
+
+        
+%         if (length(x)/2) - k == 1
+%             
+%             break
+%         end
 
     end
 
@@ -724,10 +748,10 @@ function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux,grid_mass_f
 
     outer_lower_GMF = sum(grid_mass_flux_lower(rad_dist_bool_lower==1 & grid_mass_flux_lower < 0),'omitnan');
     
-    "upper, lower plane comparison"
+%     "upper, lower plane comparison"
     flux_ratio = inner_GMF/(abs(outer_lower_GMF)+inner_GMF)
-    "upper plane comparison"
-    inner_GMF/(abs(outer_GMF)+inner_GMF)
+%     "upper plane comparison"
+%     inner_GMF/(abs(outer_GMF)+inner_GMF)
 %     flux_ratio = abs(inner)/(abs(outer)+abs(inner));
     
     if flux_ratio > 0.80
