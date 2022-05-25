@@ -235,8 +235,12 @@ for i = 1:time_num
 %     pause
     create_gif(i, strcat(gif_str,'.gif'))
     delete(findall(gcf,'Type','light'))
+    if quiver_overlay
+        patches = {p_ash p_ash_z q};
+    else
+        patches = {p_ash p_ash_z};
+    end
     
-    patches = {p_ash p_ash_z q};
     for j = 1:length(patches)
         delete(patches{j})
     end
