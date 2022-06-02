@@ -754,7 +754,7 @@ function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux,grid_mass_f
     outer_lower_GMF = sum(grid_mass_flux_lower(rad_dist_bool_lower==1 & grid_mass_flux_lower < 0),'omitnan');
     
 %     "upper, lower plane comparison"
-    flux_ratio = inner_GMF/(abs(outer_lower_GMF)+inner_GMF)
+    flux_ratio = inner_GMF/(abs(outer_lower_GMF)+inner_GMF);
 %     "upper plane comparison"
 %     inner_GMF/(abs(outer_GMF)+inner_GMF)
 %     flux_ratio = abs(inner)/(abs(outer)+abs(inner));
@@ -929,13 +929,18 @@ function [NBH, NBH_err] = NBH_calc(ash_threshold,x,y,z)
             break
         end
     end
-    
-    NBH_vert_profile = find(ash_threshold(i_func-5,length(x)/2,:)); %Find nonzero indices in threshold profile
-    if ~isempty(NBH_vert_profile) 
-        NBH = z(ceil(median(NBH_vert_profile))); %median of profile (rounded up) gives index in z of NBH
-        NBH_err = abs(z(min(NBH_vert_profile)) - z(max(NBH_vert_profile))); %Full span of nonzero numbers gives error
-    else
-        NBH = 0 ;
+    try
+        NBH_vert_profile = find(ash_threshold(i_func-5,length(x)/2,:)); %Find nonzero indices in threshold profile
+        if ~isempty(NBH_vert_profile) 
+            NBH = z(ceil(median(NBH_vert_profile))); %median of profile (rounded up) gives index in z of NBH
+            NBH_err = abs(z(min(NBH_vert_profile)) - z(max(NBH_vert_profile))); %Full span of nonzero numbers gives error
+        else
+            NBH = 0 ;
+            NBH_err = 0;
+        end
+    catch 
+        warning("NBH calc failed. Assigning NBH value to 0")
+        NBH = 0;
         NBH_err = 0;
     end
              
