@@ -110,7 +110,7 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
-lower_plane = round(plane_height/4);
+lower_plane = round(plane_height/6);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
 
@@ -120,9 +120,24 @@ rad_dist_bool_lower(isnan(rad_dist_bool_lower)) = 0;
 rad_dist_bool_lower(rad_dist_bool_lower ~= 0) = 1;
 
 % Get horizontal extent of volcano base
-volc_base = den(:,:,2);
-volc_base(isnan(volc_base))= 0;
-volc_base(volc_base ~= 0)= 1;
+% volc_base = den(:,:,2);
+
+bool=true;
+jj = 0;
+while bool == true
+    jj = jj + 1;
+    if ~isnan(den(length(x)/2,(length(y)/2)+jj,2)) 
+        upper_bound = (length(y)/2)+jj;
+        bool = false;
+    end
+end
+lower_bound = (length(y)/2) - jj;
+
+volc_base = true(size(rad_dist_bool_lower));
+volc_base(lower_bound-1:upper_bound+1,lower_bound-1:upper_bound+1) = false;
+
+% volc_base(isnan(volc_base))= 0;
+% volc_base(volc_base ~= 0)= 1;
 
 rad_dist_bool = rad_dist_bool + volc_base*2;
 
@@ -152,7 +167,7 @@ for i = 1:time_num
     ash_viz = ash_iso(:,:,:,i);
 
     ash_threshold = ash_viz;
-    ash_threshold(ash_threshold < isovalue) = 0;
+    ash_threshold(ash_threshold < isovalue(1)) = 0;
     % Ash 1
     % ash1_ts = ash1(:,:,:,timestep);
     if quiver_overlay
@@ -424,14 +439,16 @@ function p = create_isosurf(axnum, xmg, ymg, zmg, data, isovalue, den_ts)
     ----------
     p (obj): Patch object of isosurface
     %}     
-    iso_surf = isosurface(xmg,ymg,zmg,data,isovalue);
-    p = patch(axnum,iso_surf);
-
-    % calculate normals
-    isonormals(xmg,ymg,zmg,data,p)
-
-    if exist('den_ts','var')
-        isocolors(xmg,ymg,zmg,den_ts,p);
+    for i_func = 1:length(isovalue)
+        iso_surf(i_func) = isosurface(xmg,ymg,zmg,data,isovalue(i_func));
+        p(i_func) = patch(axnum,iso_surf(i_func));
+    
+        % calculate normals
+        isonormals(xmg,ymg,zmg,data,p(i_func))
+    
+        if exist('den_ts','var')
+            isocolors(xmg,ymg,zmg,den_ts,p(i_func));
+        end
     end
 end
 
@@ -449,30 +466,35 @@ function p = change_patch_props(p, ground, color, axnum)
     ----------
     p (obj): Patch object of isosurface
     %}
-    if ground == true 
-        p.FaceColor = [uint8(158) uint8(111) uint8(57)]; %brown
-        p.EdgeColor = 'none';
-        p.FaceAlpha = 1;
-    elseif ground == false
-        if exist('color','var')
-            p.FaceColor='interp';
-            p.EdgeColor='none';
-            if quiver_overlay
-                p.FaceAlpha = 0.5;
-            end
-            colorbar(axnum)
-            caxis(axnum,color)
-            colormap(viridis())
-        else
-            p.FaceColor = [.3 .3 .3]; %grey
-            p.EdgeColor = 'none';
-            if quiver_overlay
-                p.FaceAlpha = 0.5;
+    for i_func = 1:length(p)
+        if ground == true 
+            p(i_func).FaceColor = [uint8(158) uint8(111) uint8(57)]; %brown
+            p(i_func).EdgeColor = 'none';
+            p(i_func).FaceAlpha = 1;
+        elseif ground == false
+            if exist('color','var')
+                p(i_func).FaceColor='interp';
+                p(i_func).EdgeColor='none';
+                if quiver_overlay
+                    p(i_func).FaceAlpha = 0.5;
+                end
+                colorbar(axnum)
+                caxis(axnum,color)
+                colormap(viridis())
             else
-                p.FaceAlpha = 1;
+                p(i_func).FaceColor = [.3 .3 .3]; %grey
+                p(i_func).EdgeColor = 'none';
+                if quiver_overlay
+                    p(i_func).FaceAlpha = 0.5;
+                else
+                    p(i_func).FaceAlpha = 1;
+                end
+                p(i_func).SpecularStrength = .1;
+                p(i_func).DiffuseStrength = .1;  
+            if i_func > 1
+                p(i_func).FaceAlpha = 0.3;
             end
-            p.SpecularStrength = .1;
-            p.DiffuseStrength = .1;  
+            end
         end
     end
 end
@@ -945,7 +967,82 @@ function [NBH, NBH_err] = NBH_calc(ash_threshold,x,y,z)
     end
              
 end
-
+function mask = createCirclesMask(varargin)
+%xDim,yDim,centers,radii)
+% Create a binary mask from circle centers and radii
+%
+% SYNTAX:
+% mask = createCirclesMask([xDim,yDim],centers,radii);
+% OR
+% mask = createCirclesMask(I,centers,radii);
+%
+% INPUTS: 
+% [XDIM, YDIM]   A 1x2 vector indicating the size of the desired
+%                mask, as returned by [xDim,yDim,~] = size(img);
+%  
+% I              As an alternate to specifying the size of the mask 
+%                (as above), you may specify an input image, I,  from which
+%                size metrics are to be determined.
+% 
+% CENTERS        An m x 2 vector of [x, y] coordinates of circle centers
+%
+% RADII          An m x 1 vector of circle radii
+%
+% OUTPUTS:
+% MASK           A logical mask of size [xDim,yDim], true where the circles
+%                are indicated, false elsewhere.
+%
+%%% EXAMPLE 1:
+%   img = imread('coins.png');
+%   [centers,radii] = imfindcircles(img,[20 30],...
+%      'Sensitivity',0.8500,...
+%      'EdgeThreshold',0.30,...
+%      'Method','PhaseCode',...
+%      'ObjectPolarity','Bright');
+%   figure
+%   subplot(1,2,1);
+%   imshow(img)
+%   mask = createCirclesMask(img,centers,radii);
+%   subplot(1,2,2);
+%   imshow(mask)
+%
+%%% EXAMPLE 2:
+%   % Note: Mask creation is the same as in Example 1, but the image is
+%   % passed in, rather than the size of the image.
+%
+%   img = imread('coins.png');
+%   [centers,radii] = imfindcircles(img,[20 30],...
+%      'Sensitivity',0.8500,...
+%      'EdgeThreshold',0.30,...
+%      'Method','PhaseCode',...
+%      'ObjectPolarity','Bright');
+%   mask = createCirclesMask(size(img),centers,radii);
+%
+% See Also: imfindcircles, viscircles, CircleFinder
+%
+% Brett Shoelson, PhD
+% 9/22/2014
+% Comments, suggestions welcome: brett.shoelson@mathworks.com
+% Copyright 2014 The MathWorks, Inc.
+narginchk(3,3)
+if numel(varargin{1}) == 2
+	% SIZE specified
+	xDim = varargin{1}(1);
+	yDim = varargin{1}(2);
+else
+	% IMAGE specified
+	[xDim,yDim] = size(varargin{1});
+end
+centers = varargin{2};
+radii = varargin{3};
+xc = centers(:,1);
+yc = centers(:,2);
+[xx,yy] = meshgrid(1:yDim,1:xDim);
+mask = false(xDim,yDim);
+for ii = 1:numel(radii)
+	mask = mask | hypot(xx - xc(ii), yy - yc(ii)) <= radii(ii);
+end
+end
 function create_gif(i,gif_str)
     F = getframe(gcf);
     im = frame2im(F);
