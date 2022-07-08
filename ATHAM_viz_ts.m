@@ -80,6 +80,19 @@ w_vector = read_datafile(fn_data,'w');
 
 den_full = read_datafile(fn_data,'density');
 
+pnew = read_datafile(fn_data,'pnew'); % Pa
+
+tempnew = read_datafile(fn_data,'tempnew'); %K
+
+% Calculate air density for entire 4D array
+p_air = calc_air_den(pnew,tempnew); % kg/m^3
+
+% Calculate ash mass per unit volume [kg ash/m^3 air]
+ash1_air_den = ash_air_den_calc(ash1,p_air);
+ash2_air_den = ash_air_den_calc(ash2,p_air);
+ash3_air_den = ash_air_den_calc(ash3,p_air);
+ash4_air_den = ash_air_den_calc(ash4,p_air);
+
 den = den_full(:,:,:,1);
 
 % pres = read_datafile(fn_data,'pnew');
@@ -110,7 +123,7 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
-lower_plane = round(plane_height/6);
+lower_plane = round(plane_height);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
 
@@ -228,8 +241,17 @@ for i = 1:time_num
     % Calclulate mass flux through each grid point
     
     grid_mass_flux = mass_flux(x,y,row_x, row_y, plane_height, den_full, area_plane, w_vector, i);
+    grid_mass_flux_ash = ash_mass_flux(ash1_air_den,area_plane,w_vector,row_x,row_y,plane_height,i) ...
+        + ash_mass_flux(ash2_air_den,area_plane,w_vector,row_x,row_y,plane_height,i) ...
+        + ash_mass_flux(ash3_air_den,area_plane,w_vector,row_x,row_y,plane_height,i) ...
+        + ash_mass_flux(ash4_air_den,area_plane,w_vector,row_x,row_y,plane_height,i);
+
 
     grid_mass_flux_lower = mass_flux(x,y,row_x, row_y, lower_plane, den_full, area_plane, w_vector, i);
+    grid_mass_flux_lower_ash = ash_mass_flux(ash1_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i) ...
+        + ash_mass_flux(ash2_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i) ...
+        + ash_mass_flux(ash3_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i) ...
+        + ash_mass_flux(ash4_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i);
 
     if dep_calc
         mass_total(i) = grid_mass_sum(grid_mass_flux); 
@@ -237,7 +259,7 @@ for i = 1:time_num
 
     
     % Calculate stability of plume
-    [flux_ratio(i), stability(i)] = stability_calc(x,y,grid_mass_flux, grid_mass_flux_lower, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i);
+    [flux_ratio(i), stability(i)] = stability_calc(x,y,grid_mass_flux_ash, grid_mass_flux_lower_ash, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i);
     
 
 %     pause
@@ -690,6 +712,62 @@ function area_plane = area_calc(x,y,row_x,row_y)
         end
     end
 
+end
+
+
+function p_air = calc_air_den(pnew,tempnew)
+    %{
+    Calculates air density based on pressure and temperature using the ideal gas law. 
+
+    Parameters
+    ----------
+    pnew (4D array): pressure values
+    tempnew (4D array): temperature values
+
+    Returns
+    ----------
+    p_air (4D array): air density values
+    %}
+    R = 287.05; % J/kg*K (https://www.engineeringtoolbox.com/individual-universal-gas-constant-d_588.html) for air
+    p_air = pnew./(R.*tempnew); % kg/m^3
+end
+
+function ash_air_den = ash_air_den_calc(ash_trac,air_den)
+    %{
+    Convert ash concentration to ash mass per volume of air.
+
+    Parameters
+    ----------
+    ash_trac (4D array): Ash concentration values [g ash/kg air]
+    air_den (4D array): Air density values [kg/m^3]
+
+    Returns
+    ----------
+    ash_air_den (4D array): ash concentration per volume of air [kg ash/m^3 air]
+    %}
+
+    % factor of 1000 to convert from g to kg
+    ash_air_den = (ash_trac./1000) .* air_den; 
+end
+
+function grid_mass_flux_ash = ash_mass_flux(ash_air_den,area_plane,w,row_x,row_y,plane_height,i)
+    %{
+    Calculates ash mass flux based on ash mass per unit volume, area of plane, and upward velocity vector
+
+    Parameters
+    ----------
+    ash_air_den (4D array): ash concentration per volume of air [kg ash/m^3 air]
+    area_plane (4D array): array containing area of each cell in plane [m^2]
+    w (4D array): upward velocity vector [m/s]
+    row_x,row_y (1D vectors): indices of plane in both x and y dimensions
+    plane_height (int): index representing height above the domain where vent exists. 
+    i (int): index of timestep
+    
+    Returns
+    ----------
+    grid_mass_flux_ash (Array): array containing ash mass flux of each chell in plane [kg/s]
+    %}
+    grid_mass_flux_ash = ash_air_den(row_x,row_y,plane_height,i) .* area_plane .* w(row_x,row_y,plane_height,i);
 end
 
 function grid_mass_flux = mass_flux(x,y,row_x, row_y,plane_height, density, area_plane, w, i)
