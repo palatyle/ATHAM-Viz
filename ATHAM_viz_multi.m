@@ -18,9 +18,13 @@ for i = 1:length(dirs)
     output_fn = split_dir{end};
     
     split_fn = regexp(output_fn,'_','split');
-    vent_speed = split_fn{3};
-    wind_speed = split_fn{4};
+    vent_speed = split_dir{4};
     
+    if split_dir{3} == "127_5m"
+        wind_speed = split_fn{5};
+    else
+        wind_speed = split_fn{4};
+    end
     output{i+1,1} = vent_speed;
     output{i+1,2} = wind_speed;
     output{i+1,3} = flux_ratio_mean;
