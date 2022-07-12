@@ -1,16 +1,3 @@
-<<<<<<< HEAD
-function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,lat,small_grid,density_overlay, quiver_overlay, dep_calc)
-
-% tracer_name = 'ash1';
-% isovalue = .001;
-% domain_flux = false;
-% small_grid = false;
-% upper_dir = '/Volumes/(M)ATHAM/';
-% vent_diam = '75m';
-% lat = 'polar';
-dir_info=dir(fullfile(strcat(upper_dir,lat,'/',vent_diam),'**/atham_netCDF_MOV.nc'));
-dirs = extractfield(dir_info,'folder')';
-=======
 function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,lat,small_grid,density_overlay, quiver_overlay, dep_calc, passwd)
 for k = 1:length(lat)
     for j = 1:length(vent_diam)
@@ -24,7 +11,6 @@ for k = 1:length(lat)
         % lat = 'polar';
         dir_info=dir(fullfile(strcat(upper_dir,lat(k),'/',vent_diam(j)),'**/atham_netCDF_MOV.nc'));
         dirs = extractfield(dir_info,'folder')';
->>>>>>> 1da3593 (Added in outer loops to allow users to run multiple lats or vents)
 
         output = {'Vent speed (m/s)','Wind Speed (m/s)','stability mean','stability med','stability SD','Max plume height (km)','Neutral Buoyancy Height (km)', 'NBH err (km)'};
         for i = 1:length(dirs)
@@ -57,10 +43,5 @@ for k = 1:length(lat)
         toc
     end
 end
-<<<<<<< HEAD
-cd(upper_dir)
-writecell(output,strcat(lat,'_',vent_diam,'.txt'))
-=======
->>>>>>> 1da3593 (Added in outer loops to allow users to run multiple lats or vents)
 end
 
