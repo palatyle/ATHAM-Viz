@@ -123,6 +123,7 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
+plane_height = plane_height+1;
 lower_plane = round(plane_height);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
@@ -848,13 +849,16 @@ function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux,grid_mass_f
 %     inner = sum(ash_weighted_flux(ash_weighted_flux > 0),'omitnan');
     outer = sum(ash_weighted_flux(rad_dist_bool==0 & ash_weighted_flux < 0),'omitnan');
      
-    inner_GMF = sum(grid_mass_flux(rad_dist_bool==1 & grid_mass_flux > 0),'omitnan');
-    outer_GMF = sum(grid_mass_flux(rad_dist_bool==0 & grid_mass_flux < 0),'omitnan');
+%     inner_GMF = sum(grid_mass_flux(rad_dist_bool==1 & grid_mass_flux > 0),'omitnan');
+%     outer_GMF = sum(grid_mass_flux(rad_dist_bool==0 & grid_mass_flux < 0),'omitnan');
+
+    inner_GMF = sum(grid_mass_flux(grid_mass_flux>0));
+    outer_GMF = sum(grid_mass_flux(grid_mass_flux<0));
 
     outer_lower_GMF = sum(grid_mass_flux_lower(rad_dist_bool_lower==1 & grid_mass_flux_lower < 0),'omitnan');
     
 %     "upper, lower plane comparison"
-    flux_ratio = inner_GMF/(abs(outer_lower_GMF)+inner_GMF);
+    flux_ratio = inner_GMF/(abs(outer_GMF)+inner_GMF);
 %     "upper plane comparison"
 %     inner_GMF/(abs(outer_GMF)+inner_GMF)
 %     flux_ratio = abs(inner)/(abs(outer)+abs(inner));
@@ -953,7 +957,7 @@ function domain_flux_calc(ash1, ash2, ash3, ash4, time_num, z)
     %}
     
     % sum 
-    for i_func = 1:time_num
+    for i_func = 1:time_num-1
         ash1_row_ts(:,i_func) = row_sum_ts(ash1(:,:,:,i_func));
         ash2_row_ts(:,i_func) = row_sum_ts(ash2(:,:,:,i_func));
         ash3_row_ts(:,i_func) = row_sum_ts(ash3(:,:,:,i_func));
@@ -964,17 +968,17 @@ function domain_flux_calc(ash1, ash2, ash3, ash4, time_num, z)
     total_ash3_ts = sum(ash3_row_ts,2);
     total_ash4_ts = sum(ash4_row_ts,2);
     
-    ash1_domain = sum_remaining_ash(ash1, z);
-    ash2_domain = sum_remaining_ash(ash2, z);
-    ash3_domain = sum_remaining_ash(ash3, z);
-    ash4_domain = sum_remaining_ash(ash4, z);
+    ash1_domain = sum_remaining_ash(ash1(:,:,:,end), z);
+    ash2_domain = sum_remaining_ash(ash2(:,:,:,end), z);
+    ash3_domain = sum_remaining_ash(ash3(:,:,:,end), z);
+    ash4_domain = sum_remaining_ash(ash4(:,:,:,end), z);
     
     total_domain_flux_ash1 = total_ash1_ts + ash1_domain';
     total_domain_flux_ash2 = total_ash2_ts + ash2_domain';
     total_domain_flux_ash3 = total_ash3_ts + ash3_domain';
     total_domain_flux_ash4 = total_ash4_ts + ash4_domain';
-    writematrix(['Height (km)','37 um ash conc (g/kg)','150 um ash conc (g/kg)','900 um ash conc (g/kg)'],'mass_fluxes.txt','Delimiter',',')
-    writematrix([z,total_domain_flux_ash1,total_domain_flux_ash2,total_domain_flux_ash3],'mass_fluxes.txt','WriteMode','append')
+    writematrix(['Height (km)','7_8 um ash conc (g/kg)','15_6 um ash conc (g/kg)','125 um ash conc (g/kg)','1 mm ash conc (g/kg)'],'mass_fluxes.txt','Delimiter',',')
+    writematrix([z,total_domain_flux_ash1,total_domain_flux_ash2,total_domain_flux_ash3,total_domain_flux_ash4],'mass_fluxes.txt','WriteMode','append')
 end
 
 function last_step_domain_ash_var = sum_remaining_ash(ash_var, z)
@@ -1018,9 +1022,9 @@ function gif_str = get_gif_str(fn, isovalue)
 end
 
 function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD] = stat_calc(flux_ratio)
-    flux_ratio_mean = mean(flux_ratio(10:end-1),'omitnan');
-    flux_ratio_med = median(flux_ratio(10:end-1),'omitnan');
-    flux_ratio_SD = std(flux_ratio(10:end-1),'omitnan');
+    flux_ratio_mean = mean(flux_ratio(1:end-1),'omitnan');
+    flux_ratio_med = median(flux_ratio(1:end-1),'omitnan');
+    flux_ratio_SD = std(flux_ratio(1:end-1),'omitnan');
 end
 
 function [NBH, NBH_err] = NBH_calc(ash_threshold,x,y,z)
