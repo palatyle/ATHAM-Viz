@@ -123,7 +123,7 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
-plane_height = plane_height+1;
+% plane_height = plane_height+1;
 lower_plane = round(plane_height);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
@@ -153,7 +153,7 @@ volc_base(lower_bound-1:upper_bound+1,lower_bound-1:upper_bound+1) = false;
 % volc_base(isnan(volc_base))= 0;
 % volc_base(volc_base ~= 0)= 1;
 
-rad_dist_bool = rad_dist_bool + volc_base*2;
+% rad_dist_bool = rad_dist_bool + volc_base*2;
 
 rad_dist_bool_lower = rad_dist_bool_lower + volc_base;
 rad_dist_bool_lower(rad_dist_bool_lower==2) = 0;
@@ -852,13 +852,15 @@ function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux,grid_mass_f
 %     inner_GMF = sum(grid_mass_flux(rad_dist_bool==1 & grid_mass_flux > 0),'omitnan');
 %     outer_GMF = sum(grid_mass_flux(rad_dist_bool==0 & grid_mass_flux < 0),'omitnan');
 
-    inner_GMF = sum(grid_mass_flux(grid_mass_flux>0));
-    outer_GMF = sum(grid_mass_flux(grid_mass_flux<0));
+    inner_GMF = sum(grid_mass_flux(grid_mass_flux>0 & rad_dist_bool==1));
+    outer_GMF_down = sum(grid_mass_flux(grid_mass_flux<0 & rad_dist_bool==0));
+    outer_GMF_up = sum(grid_mass_flux(grid_mass_flux>0 & rad_dist_bool==0));
 
-    outer_lower_GMF = sum(grid_mass_flux_lower(rad_dist_bool_lower==1 & grid_mass_flux_lower < 0),'omitnan');
+
+    
     
 %     "upper, lower plane comparison"
-    flux_ratio = inner_GMF/(abs(outer_GMF)+inner_GMF);
+    flux_ratio = inner_GMF/(inner_GMF+outer_GMF_down-outer_GMF_up);
 %     "upper plane comparison"
 %     inner_GMF/(abs(outer_GMF)+inner_GMF)
 %     flux_ratio = abs(inner)/(abs(outer)+abs(inner));
