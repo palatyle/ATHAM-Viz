@@ -1,4 +1,4 @@
-function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, small_grid, density_overlay, quiver_overlay, dep_calc)
+function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, plane_offset, density_overlay, quiver_overlay, dep_calc)
 %% before loop!
 % Setup plot windows
 % h = figure()
@@ -122,8 +122,8 @@ end
 % Calcualte area of every grid cell
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
-plane_height = find_plane_height(den,x,y,z,xmg,ymg,small_grid);
-plane_height = plane_height+1;
+plane_height = find_plane_height(den,x,y,z,xmg,ymg,plane_offset);
+% plane_height = plane_height +1; % +1 for 20m! Make part of plane_offset flag
 lower_plane = round(plane_height);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
@@ -153,7 +153,7 @@ volc_base(lower_bound-1:upper_bound+1,lower_bound-1:upper_bound+1) = false;
 % volc_base(isnan(volc_base))= 0;
 % volc_base(volc_base ~= 0)= 1;
 
-rad_dist_bool = rad_dist_bool + volc_base*2;
+% rad_dist_bool = rad_dist_bool + volc_base*2;
 
 rad_dist_bool_lower = rad_dist_bool_lower + volc_base;
 rad_dist_bool_lower(rad_dist_bool_lower==2) = 0;
@@ -649,7 +649,7 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
     rad_dist_bool(lower_x:upper_x,lower_y:upper_y) = true;
 end
 
-function plane_height = find_plane_height(density,x,y,z,xmg,ymg,small_grid)
+function plane_height = find_plane_height(density,x,y,z,xmg,ymg,plane_offset)
     %{
     Finds height point just above vent to place stabiltiy calculation vent.
     Counts up from bottom of domain untill reaching a height where there
@@ -667,11 +667,7 @@ function plane_height = find_plane_height(density,x,y,z,xmg,ymg,small_grid)
     for i_func = 1:length(z)
 %         if sum(sum(isnan(density(:,:,i_func)))) == 0
         if squeeze(isnan(density(length(x)/2,length(y)/2,i_func))) == 0
-            if small_grid == true
-                plane_height = i_func+1;
-            else
-                plane_height = i_func; % if not 30 m
-            end
+            plane_height = i_func + plane_offset;
             break
         end
     end
@@ -849,11 +845,11 @@ function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux,grid_mass_f
 %     inner = sum(ash_weighted_flux(ash_weighted_flux > 0),'omitnan');
     outer = sum(ash_weighted_flux(rad_dist_bool==0 & ash_weighted_flux < 0),'omitnan');
      
-%     inner_GMF = sum(grid_mass_flux(rad_dist_bool==1 & grid_mass_flux > 0),'omitnan');
-%     outer_GMF = sum(grid_mass_flux(rad_dist_bool==0 & grid_mass_flux < 0),'omitnan');
+    inner_GMF = sum(grid_mass_flux(rad_dist_bool==1 & grid_mass_flux > 0),'omitnan');
+    outer_GMF = sum(grid_mass_flux(rad_dist_bool==0 & grid_mass_flux < 0),'omitnan');
 
-    inner_GMF = sum(grid_mass_flux(grid_mass_flux>0));
-    outer_GMF = sum(grid_mass_flux(grid_mass_flux<0));
+%     inner_GMF = sum(grid_mass_flux(grid_mass_flux>0));
+%     outer_GMF = sum(grid_mass_flux(grid_mass_flux<0));
 
     outer_lower_GMF = sum(grid_mass_flux_lower(rad_dist_bool_lower==1 & grid_mass_flux_lower < 0),'omitnan');
     
