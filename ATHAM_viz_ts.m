@@ -123,11 +123,16 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,plane_offset);
-% plane_height = plane_height +1; % +1 for 20m! Make part of plane_offset flag
 lower_plane = round(plane_height);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
 
+% FOR 303 M CASE ONLY i.e. plane_offset = -1
+% We do this after figuring out rad_dist_bool so that the later ash flux
+% calc can look at a plane not entirely full of nans in the center. 
+if plane_offset == -1
+    plane_height = plane_height+1;
+end
 % Get lower boolean array 
 rad_dist_bool_lower = den(:,:,lower_plane);
 rad_dist_bool_lower(isnan(rad_dist_bool_lower)) = 0;
@@ -633,6 +638,8 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
         if upper_x_bool == false && lower_x_bool == false && upper_y_bool == false && lower_y_bool == false
             all_nans_found = true;
         end
+        
+        
 
 
 
@@ -644,9 +651,39 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
 %         end
 
     end
+        % If nan is found to early, something is wrong (in our case, this
+        % only happens in the 303 m case. Instead of looking for nans,
+        % we're going to look for lack of nans in a very similar way to
+        % above. 
+        if k == 1 && all_nans_found == true
+            more_nans_needed = false;
+            [upper_x_bool, lower_x_bool, upper_y_bool, lower_y_bool] = deal(true);
+            while more_nans_needed == false
+                k = k+1;
+                if ~isnan(density((length(x)/2)+k,length(y)/2,plane_height)) && upper_x_bool == true
+                    upper_x = (length(x)/2)+(k-1);
+                    upper_x_bool=false;
+                end
+                if ~isnan(density((length(x)/2)-k,length(y)/2,plane_height)) && lower_x_bool == true
+                    lower_x = (length(x)/2)-(k-1);
+                    lower_x_bool=false;
+                end
+                if ~isnan(density(length(x)/2,(length(y)/2)+k,plane_height)) && upper_y_bool == true
+                    upper_y = (length(y)/2)+(k-1);
+                    upper_y_bool=false;
+                end
+                if ~isnan(density(length(x)/2,(length(y)/2)-k,plane_height)) && lower_y_bool == true
+                    lower_y = (length(y)/2)-(k-1);
+                    lower_y_bool=false;          
+                end
+                if upper_x_bool == false && lower_x_bool == false && upper_y_bool == false && lower_y_bool == false
+                    more_nans_needed = true;
+                end
+            end
+        end
 
     rad_dist_bool = false(size(density(:,:,plane_height)));
-    rad_dist_bool(lower_x:upper_x,lower_y:upper_y) = true;
+    rad_dist_bool(lower_x+5:upper_x-5,lower_y+5:upper_y-5) = true;
 end
 
 function plane_height = find_plane_height(density,x,y,z,xmg,ymg,plane_offset)
