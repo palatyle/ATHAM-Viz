@@ -601,6 +601,7 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
     k=0;
     all_nans_found = false;
     [upper_x_bool, lower_x_bool, upper_y_bool, lower_y_bool] = deal(true);
+    rad_dist_bool = false(size(density(:,:,plane_height)));
 
     while all_nans_found == false
         k = k+1;
@@ -637,6 +638,7 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
 
         if upper_x_bool == false && lower_x_bool == false && upper_y_bool == false && lower_y_bool == false
             all_nans_found = true;
+            rad_dist_bool(lower_x:upper_x,lower_y:upper_y) = true;
         end
         
         
@@ -680,10 +682,10 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
                     more_nans_needed = true;
                 end
             end
+            rad_dist_bool(lower_x+5:upper_x-5,lower_y+5:upper_y-5) = true;
         end
 
-    rad_dist_bool = false(size(density(:,:,plane_height)));
-    rad_dist_bool(lower_x+5:upper_x-5,lower_y+5:upper_y-5) = true;
+    
 end
 
 function plane_height = find_plane_height(density,x,y,z,xmg,ymg,plane_offset)
