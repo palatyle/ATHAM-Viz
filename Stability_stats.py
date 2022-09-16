@@ -357,3 +357,46 @@ for lat_idx, lat in enumerate(lats):
 
     fig7.savefig(input_dir+lat+"_"+ "MaxPlumeHeightVsWind.pdf", format = 'pdf',bbox_inches=None, dpi=300)
 
+
+
+# %% Flat runs
+fn = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v7_stability_calc/tropical_flat_75m.txt'
+df = pd.read_csv(fn)
+df=df.replace('ms','',regex=True)
+df['Wind Speed (m/s)'] = df['Wind Speed (m/s)'].astype(int)
+df['Vent speed (m/s)'] = df['Vent speed (m/s)'].astype(int)
+df['stability mean'] = df['stability mean'] * 100
+
+vent_speed_group = df.groupby('Vent speed (m/s)') # group by vent speed
+fig8, ax8 = plt.subplots(figsize=(10,8))
+colors_vent_speed = plt.cm.viridis(np.linspace(0,1,num=vent_speed_group.ngroups)) # get colors for each group
+
+for count,value in enumerate([50,70,100]):
+    vent_speed_group.get_group(value).sort_values(by=['Wind Speed (m/s)']).plot(
+    kind='line',
+    style = '-o', 
+    x='Wind Speed (m/s)',
+    y='stability mean', 
+    legend = False,  
+    grid = True, 
+    color=colors_vent_speed[count],
+    ax=ax8)
+    
+
+    ax8.errorbar(vent_speed_group.get_group(value)['Wind Speed (m/s)'],
+        vent_speed_group.get_group(value)['stability mean'],
+        yerr=vent_speed_group.get_group(value)['stability SD']*100,
+        fmt = 'none',
+        ecolor = colors_vent_speed[count],
+        capsize=5,
+        barsabove=True)
+
+ax8.set_ylim(10,100)
+# Add ticks and labels based on wind_speed vector
+ax8.set_xticks(wind_speed)
+ax8.minorticks_on()
+# Add grid minor gird lines with a dashed, semi transparent appearance. 
+ax8.grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
+fig8.legend([50,70,100], ncol = len([50,70,100]), borderpad = 0.3, frameon=True, fancybox=True, title='Vent Speed (m/s)', loc=8)
+
+fig8.savefig(input_dir+ "75m_tropical_flat_StabilityVsWind.pdf", format = 'pdf',bbox_inches=None, dpi=300)

@@ -44,6 +44,7 @@ for k = 1:length(lat)
             output{i+1,7} = NBH;
             output{i+1,8} = NBH_err;
         end
+        close all
         cd(upper_dir)
         writecell(output,strcat(lat(k),'_',vent_diam(j),'.txt'))
         matlabmail('tylerpaladino@isu.edu',strcat(vent_diam(j), ' Done'),'Script Finished','palatyle@isu.edu',passwd)

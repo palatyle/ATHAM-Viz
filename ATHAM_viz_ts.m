@@ -123,7 +123,7 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,plane_offset);
-lower_plane = round(plane_height);
+lower_plane = round(plane_height/2);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
 
@@ -179,7 +179,7 @@ gif_str = get_gif_str(fn, isovalue);
 disp(strcat('Currently visualizing ',' ', gif_str))
 % figure(2);
 
-
+dir_matrix = zeros(size(area_plane));
 
 %% In loop
 for i = 1:time_num
@@ -258,6 +258,9 @@ for i = 1:time_num
         + ash_mass_flux(ash2_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i) ...
         + ash_mass_flux(ash3_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i) ...
         + ash_mass_flux(ash4_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i);
+    
+    grid_mass_flux_lower_ash(grid_mass_flux_lower_ash>0) = 0; 
+    dir_matrix = dir_matrix + grid_mass_flux_lower_ash;
 
     if dep_calc
         mass_total(i) = grid_mass_sum(grid_mass_flux); 
@@ -312,6 +315,8 @@ if dep_calc
 
     mass_plane_final/(mass_plane_final + ash_dep_mass)
 end
+
+save(strcat(gif_str,'.mat'),'dir_matrix')
 
 disp('Done visualizing in:')
 toc
@@ -1053,7 +1058,12 @@ function gif_str = get_gif_str(fn, isovalue)
     if isempty(gif_str)
         gif_str = split_dir{end-1};
     end
-    gif_str = strcat(gif_str,'_iso_',num2str(isovalue));
+    temp_str=[];
+    for i_func = 1:length(isovalue)
+        temp_str = strcat(temp_str,'_',num2str(isovalue(i_func)));
+    end
+    gif_str = strcat(gif_str,'_iso',temp_str);
+%     gif_str = strcat(gif_str,'_iso_',num2str(isovalue));
 end
 
 function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD] = stat_calc(flux_ratio)
