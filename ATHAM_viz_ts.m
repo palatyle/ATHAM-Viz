@@ -123,7 +123,8 @@ end
 area_plane = area_calc(x,y,row_x,row_y);
 % Find index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,plane_offset);
-lower_plane = round(plane_height/2);
+lower_plane = round(plane_height*(7/8));
+% lower_plane = round(plane_height);
 % Get boolean array at plane height of volcano vs air
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
 
