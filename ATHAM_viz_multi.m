@@ -1,4 +1,5 @@
 function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,lat,density_overlay, quiver_overlay, dep_calc, passwd)
+mkdir(strcat(upper_dir,'direction_out'))
 for k = 1:length(lat)
     for j = 1:length(vent_diam)
         tic
@@ -23,7 +24,7 @@ for k = 1:length(lat)
                 plane_offset = -1;
             end 
                 
-            [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, plane_offset, density_overlay, quiver_overlay, dep_calc);
+            [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err,gif_str] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, plane_offset, density_overlay, quiver_overlay, dep_calc);
             split_dir = regexp(fn,filesep,'split');
             output_fn = split_dir{end};
 
@@ -43,6 +44,8 @@ for k = 1:length(lat)
             output{i+1,6} = max_plume_height;
             output{i+1,7} = NBH;
             output{i+1,8} = NBH_err;
+            
+            copyfile(strcat(gif_str,'.mat'),strcat(upper_dir,'direction_out'))
         end
         close all
         cd(upper_dir)
