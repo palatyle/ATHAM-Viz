@@ -61,7 +61,7 @@ for k = 1:length(lat)
         props.setProperty('mail.smtp.socketFactory.class','javax.net.ssl.SSLSocketFactory');
         props.setProperty('mail.smtp.socketFactory.port','465');
         
-        sendmail(palatyle@isu.edu,strcat(vent_diam(j),' Done'),'Script Finished')
+        sendmail('palatyle@isu.edu',strcat(vent_diam(j),' Done'),'Script Finished')
         disp(strcat('Done visualizing vent ',vent_diam(j),'in:'))
         toc
     end
