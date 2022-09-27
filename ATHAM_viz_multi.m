@@ -1,4 +1,4 @@
-function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,lat,density_overlay, quiver_overlay, dep_calc, passwd)
+function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,lat,density_overlay, quiver_overlay, dep_calc)
 mkdir(strcat(upper_dir,'direction_out'))
 for k = 1:length(lat)
     for j = 1:length(vent_diam)
