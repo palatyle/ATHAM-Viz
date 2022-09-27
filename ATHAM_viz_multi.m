@@ -51,17 +51,17 @@ for k = 1:length(lat)
         cd(upper_dir)
         writecell(output,strcat(lat(k),'_',vent_diam(j),'.txt'))
         
-        setpref('Internet','E_mail','palatyle@isu.edu');
-        setpref('Internet','SMTP_Server','smtp.gmail.com');
-        setpref('Internet','SMTP_Username','palatyle@isu.edu');
-        setpref('Internet','SMTP_Password',passwd);
-        
-        props = java.lang.System.getProperties;
-        props.setProperty('mail.smtp.auth','true');
-        props.setProperty('mail.smtp.socketFactory.class','javax.net.ssl.SSLSocketFactory');
-        props.setProperty('mail.smtp.socketFactory.port','465');
-        
-        sendmail('palatyle@isu.edu',strcat(vent_diam(j),' Done'),'Script Finished')
+%         setpref('Internet','E_mail','palatyle@isu.edu');
+%         setpref('Internet','SMTP_Server','smtp.gmail.com');
+%         setpref('Internet','SMTP_Username','palatyle@isu.edu');
+%         setpref('Internet','SMTP_Password',passwd);
+%         
+%         props = java.lang.System.getProperties;
+%         props.setProperty('mail.smtp.auth','true');
+%         props.setProperty('mail.smtp.socketFactory.class','javax.net.ssl.SSLSocketFactory');
+%         props.setProperty('mail.smtp.socketFactory.port','465');
+%         
+%         sendmail('palatyle@isu.edu',strcat(vent_diam(j),' Done'),'Script Finished')
         disp(strcat('Done visualizing vent ',vent_diam(j),'in:'))
         toc
     end
