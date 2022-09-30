@@ -25,7 +25,7 @@ for path, subdirs, files in os.walk(root):
 # tic = time.perf_counter()
 # fn = '/Users/tylerpaladino/Downloads/mid-lat_75m_100ms_20ms/atham_netCDF_MOV.nc'
 
-for path in paths:
-    print(path)
+for idx, path in enumerate(paths):
+    print("Progress: " + str(idx) +"/" + str(len(paths)))
     compress(path,path+'compress.nc')
 
