@@ -450,22 +450,26 @@ fig8.supxlabel('Wind Speed (m/s)', x=0)
 fig8.savefig(input_dir+ "75m_tropical_flat_StabilityVsWind.pdf", format = 'pdf',bbox_inches=None, dpi=300)
 
 # %%
-fig9, ax9 = plt.subplots(1,len(vent_rad[1:]),figsize=(10,8))
+fig9, ax9 = plt.subplots(1,len(vent_rad),figsize=(10,8))
 fig9.autolayout = False
 
 
-for rad_count, rad_value in enumerate(vent_rad[1:]):
+for rad_count, rad_value in enumerate(vent_rad):
     if rad_value == 127:
         rad_value = '127_5'
     new_df = flattened_df[(flattened_df["Wind Speed (m/s)"] == 0) & (flattened_df["Vent Radius (m)"] == rad_value)].groupby('Vent speed (m/s)')
 
 
     for vel_count, vel_value in enumerate(vent_vel):
-        new_df.get_group(vel_value).plot(kind='line',style='-o',x='Atmosphere',y='stability mean',legend=False,color=colors_vent_speed[vel_count],ax = ax9[rad_count])
-        ax9[rad_count].set_title('Vent Radius = '+str(rad_value)+' m')
-        ax9[rad_count].minorticks_on()
-        ax9[rad_count].set_ylim(0,100)
+        try:
+            new_df.get_group(vel_value).plot(kind='line',style='-o',x='Atmosphere',y='stability mean',legend=False,color=colors_vent_speed[vel_count],ax = ax9[rad_count])
+        except KeyError:
+            print("Missing data for vent speed: " + str(vel_value) + " and vent radius: " + str(rad_value))
+            continue
 
+    ax9[rad_count].set_title('Vent Radius = '+str(rad_value)+' m')
+    ax9[rad_count].minorticks_on()
+    ax9[rad_count].set_ylim(0,100)
 
 fig9.legend(vent_vel, ncol = len(vent_vel), borderpad = 0.3, frameon=True, fancybox=True, title='Vent Speed (m/s)', loc=8)
 fig9.tight_layout()
