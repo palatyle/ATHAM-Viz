@@ -1,21 +1,22 @@
 close all
 clear all
-cd '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/direction_out'
 
+% Load in fine and coarse grid geometry files
+load('/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/fine_geo.mat')
 load('/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/coarse_geo.mat')
+
 x_coarse = x(row_x);
 y_coarse = y(row_y);
 
-
-load('/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/fine_geo.mat')
 x_fine = x(row_x);
 y_fine = y(row_y);
 
+% Get list of all files in directory
+cd '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/direction_out'
 files = dir();
-
 files = files(~ismember({files.name},{'.','..','.DS_Store'}));
 
-
+% Loop through all files and load in data
 for i = 1:length(files)
     split = regexp(files(i).name,'_','split');
     for j = 1:length(split)
@@ -46,13 +47,10 @@ for i = 1:length(files)
 
     
 end
-% 
-% for i = 0:5:50
-%     sum
-% end
 
 vents = [20, 30, 75, 127.5, 303];
 
+% Plot each direction plamne
 for i = 1:length(vents)
     input_plane = planes([planes.vent]==vents(i));
     if vents(i) == 20
@@ -68,9 +66,10 @@ function plane_plot(plane_filt,vent_size,X,Y)
     if vent_size == 20
         window_size = 15;
     else
-        window_size = 7;
+        window_size = 8;
     end
 
+    % Windspeed planes
     plane_0 = plane_filt([plane_filt.windspeed] == 0);
     plane_5 = plane_filt([plane_filt.windspeed] == 5);
     plane_10 = plane_filt([plane_filt.windspeed] == 10);
@@ -109,27 +108,50 @@ function plane_plot(plane_filt,vent_size,X,Y)
     
     plane_cell = {plane_0_sum, plane_5_sum plane_10_sum plane_15_sum plane_20_sum plane_25_sum plane_30_sum plane_35_sum plane_40_sum plane_45_sum plane_50_sum};
     
-    color_min = min(min([plane_cell{:}]));
+%     color_min = min(min([plane_cell{:}]));
     color_max = max(max([plane_cell{:}]));
     
-    cellfun(@(x) x/color_max,plane_cell,'un',0);
+    plane_cell = cellfun(@(x) x/color_max,plane_cell,'un',0);
     windspeeds = 0:5:50;
     fig = figure;
-    for i = 1:length(plane_cell)
-        sp{i} = subplot(3,4,i);
-        hp = pcolor(X,Y,plane_cell{i});
-        grid on
-        xlim([(X(end)/2)-window_size (X(end)/2)+window_size])
-        ylim([(Y(end)/2)-window_size (Y(end)/2)+window_size])
-        set(hp, 'EdgeColor', 'none');
-        axis square
-        grid on
-        title(strcat(string(windspeeds(i))," m/s"))
-%         caxis(sp{i},[color_min,color_max]) %
-    end
-    h = axes(fig, 'visible','off');
-    colorbar(h,'Position',[0.93 0.168 0.022 0.7]);  % attach colorbar to h
-%     caxis(h,[color_min,color_max])
-    sgtitle(strcat(num2str(vent_size),' m Vent'))
+    set(gcf,'Position', [454,86,890,714])
 
+    tl = tiledlayout(3,4,'TileSpacing','compact');
+    for i = 1:length(plane_cell)
+%         sp{i} = subplot(3,4,i);
+        h(i) = nexttile(tl);
+        hp = pcolor(h(i),X,Y,plane_cell{i});
+%         axis equal
+        axis(h(i),'equal')
+        xlim([(X(end)/2)-window_size (X(end)/2)+window_size])
+        ylim([(X(end)/2)-window_size (X(end)/2)+window_size])
+        if vent_size ~= 20
+            set(gca,'xtick',[15:5:30],'ytick',[15:5:30])
+        else
+            set(gca,'xtick',[35:5:60],'ytick',[35:5:60])
+        end
+
+        set(gca,'XTickLabel',[],'YTickLabel',[])
+        set(hp, 'EdgeColor', 'none');
+        grid on
+
+        [t,s] = title(strcat(string(windspeeds(i))," m/s"));
+        t.FontName = 'Myriad Pro';
+        t.FontWeight = 'Bold';
+        t.FontSize = 16;
+        set(gca, 'Layer', 'top')
+        colormap(flipud(magma))
+    end
+
+    c=colorbar(h(end));
+    c.Layout.Tile='east';
+    
+    ylabel(c,'Normalized Ash Mass');
+    caxis([0,1])
+    t_sg = sgtitle(strcat(num2str(vent_size),' m Vent'));
+    t_sg.FontName = 'Myriad Pro';
+    t_sg.FontWeight = 'Bold';
+    t_sg.FontSize = 28;
+    c.FontName = 'Myriad Pro';
+    c.FontSize = 14;
 end

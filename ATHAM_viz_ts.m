@@ -1,31 +1,53 @@
 function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err,gif_str] = ATHAM_viz_ts(fn, tracer_name, isovalue, domain_flux, plane_offset, density_overlay, quiver_overlay, dep_calc)
+% ATHAM_viz_ts.m  Visualize ATHAM output as a 3D animation. 
+
+% INPUTS
+% fn = directory of ATHAM output file (string)
+% tracer_name = name of tracer to visualize (string)
+% isovalue = isovalue of tracer to visualize (double)
+% domain_flux is a boolean that determines whether or not you want to visualize the flux through the domain edges of the simulation
+% plane_offset = index offset of plane from vent
+% density_overlay is a boolean that will color an isosurface by the bulk density at that point
+% quiver_overlay is a boolean that will plot the motion vectors of the plume on the isosurface
+% dep_calc will is a boolean that will calculate the total ash being deposited on the ground over the course of the simulation
+
+% OUTPUTS
+% flux_ratio_mean = mean stability flux ratio over the course of the simulation
+% flux_ratio_med = median stability flux ratio over the course of the simulation
+% flux_ratio_SD = standard deviation of stability flux ratio over the course of the simulation
+% max_plume_height = maximum plume height over the course of the simulation (km)
+% NBH = Neutral Buoyancy Height of the plume over the course of the simulation (km) NOTE: currently unreliable)_
+% NBH_err = error in NBH (km) NOTE: currently unreliable
+% gif_str = string of the name of the animated gif created by this function
+
+% EXAMPLES:
+% The following will visualize the ATHAM netcdf file located at /Volumes/MATHAM3/tropical/30m/50ms/tropical_30m_50ms_0ms.
+% It will visualzie the ash3 traceer at two isosurface (.1 and .001 g ash/kg air) and offsets the stabiltiy plane by 1 index value.
+% [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts("/Volumes/MATHAM3/tropical/30m/50ms/tropical_30m_50ms_0ms", 'ash3', [.1,.001], false, 1, false, false, false) 
+
 %% before loop!
-% Setup plot windows
-% h = figure()
+
 tic
 cd(fn)
+% Assuming all ATHAM output files are named in the following format:
 fn_data = 'atham_netCDF_MOV.nc';
+% fn_data = 'MATHAM_spring_netCDF_MOV.nc';
 fn_dep = 'atham_netCDF_PIC.nc';
 
+% Setting up the figure
 ax1 = subplot(1,2,1);
 ax2 = subplot(1,2,2);
 
-
-% timestep = 45;
 xlabel([ax1 ax2], 'X Distance [km]')
 ylabel([ax1 ax2], 'Y Distance [km]')
 zlabel([ax1 ax2], 'Z Distance [km]')
 grid([ax1 ax2], 'on')
 grid([ax1 ax2], 'minor')
 
-
-% fn = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/tropical_75m_50ms_35ms/atham_netCDF_MOV.nc';
-
+% Get tracer names from netcdf file
 ash_names = find_num_trac(fn_data);
 
-% Read in ash tracers in g/kg, multiply by scale factor and remove nans \
-
-   
+% Read in ash tracers in g/kg, multiply by scale factor and remove nans 
 if sum(matches(ash_names, 'ash1')) == 1
     ash1 = read_datafile(fn_data,'ash1')*1000;
     ash1 = remove_nans(ash1);
@@ -68,21 +90,24 @@ else
     ash4 = zeros(size(ash1));
 end
 
+% Make new variable for visualization
 ash_iso = get_viz_trac(tracer_name);
 
-% Vertical motion vector
+% If guiver overlay is turned on, read in u and v vectors
 if quiver_overlay
-    u_vector = read_datafile(fn_data,'u');
-    v_vector = read_datafile(fn_data,'v');
+    u_vector = read_datafile(fn_data,'u'); % m/s
+    v_vector = read_datafile(fn_data,'v'); % m/s
 end
-w_vector = read_datafile(fn_data,'w');
 
+% Read in w vector for use in stability calculation
+w_vector = read_datafile(fn_data,'w'); % m/s
 
-den_full = read_datafile(fn_data,'density');
+% Read in density for use in stability calculation
+den_full = read_datafile(fn_data,'density'); % kg/m^3
 
+% Read in pressure and temperature for use in stability calculation
 pnew = read_datafile(fn_data,'pnew'); % Pa
-
-tempnew = read_datafile(fn_data,'tempnew'); %K
+tempnew = read_datafile(fn_data,'tempnew'); % K
 
 % Calculate air density for entire 4D array
 p_air = calc_air_den(pnew,tempnew); % kg/m^3
@@ -93,22 +118,29 @@ ash2_air_den = ash_air_den_calc(ash2,p_air);
 ash3_air_den = ash_air_den_calc(ash3,p_air);
 ash4_air_den = ash_air_den_calc(ash4,p_air);
 
+% Grab first timestep of density array. To be used in visualization of ground surface
 den = den_full(:,:,:,1);
 
-% pres = read_datafile(fn_data,'pnew');
-
+% Remove nans from entire density array
 den_full = remove_nans(den_full);
 
+% Read in x,y,z coordinates
+[x,y,z] = read_geo(fn_data); % m
 
-
-[x,y,z] = read_geo(fn_data);
+% Read in center of domain
 [x_zoom_loc, y_zoom_loc] = read_zoom_loc(fn_data);
+
+% Create mesh grid out of x,y,z coordinates
 [xmg,ymg,zmg] = create_grid(x,y,z);
+
+% Read in time array and conver to seconds
 time_arr = read_datafile(fn_data,'time') * 60; %convert mins to seconds
+
+% Find timestep value
 time_num = find_timesteps(ash1);
 
+% Find max and min of density and quiver overlays 
 if density_overlay || quiver_overlay
-    % Find indices of isovalue at each timestep
     idxs = find(ash_iso(:) < isovalue+.01 & ash_iso(:) > isovalue-.01);
         iso_clr_max = max(max(max(max(den_full(idxs)))));
         iso_clr_min = min(min(min(min(den_full(idxs)))));
@@ -117,93 +149,68 @@ if density_overlay || quiver_overlay
     color_min_max = [iso_clr_min,iso_clr_max];
 end
 
-% Get extent of plane 
+% Get extent of stability plane 
 [row_x,row_y] = get_plane_extent(x,y);
+
 % Calcualte area of every grid cell
-area_plane = area_calc(x,y,row_x,row_y);
-% Find index of plane to calcualte stabiltiy at
+area_plane = area_calc(x,y,row_x,row_y); % m^2
+
+% Find height index of plane to calcualte stabiltiy at
 plane_height = find_plane_height(den,x,y,z,xmg,ymg,plane_offset);
+
+% Find height index of plane to track PDC directionality at
 lower_plane = round(plane_height*(7/8));
-% lower_plane = round(plane_height);
-% Get boolean array at plane height of volcano vs air
+
+% Get boolean array of all points within radius of crater rim
 rad_dist_bool = get_rad_array(den,x,y,z,xmg,ymg,plane_height);
 
-% FOR 303 M CASE ONLY i.e. plane_offset = -1
-% We do this after figuring out rad_dist_bool so that the later ash flux
-% calc can look at a plane not entirely full of nans in the center. 
-if plane_offset == -1
-    plane_height = plane_height+1;
-end
-% Get lower boolean array 
-rad_dist_bool_lower = den(:,:,lower_plane);
-rad_dist_bool_lower(isnan(rad_dist_bool_lower)) = 0;
-rad_dist_bool_lower(rad_dist_bool_lower ~= 0) = 1;
-
-% Get horizontal extent of volcano base
-% volc_base = den(:,:,2);
-
-bool=true;
-jj = 0;
-while bool == true
-    jj = jj + 1;
-    if ~isnan(den(length(x)/2,(length(y)/2)+jj,2)) 
-        upper_bound = (length(y)/2)+jj;
-        bool = false;
-    end
-end
-lower_bound = (length(y)/2) - jj;
-
-volc_base = true(size(rad_dist_bool_lower));
-volc_base(lower_bound-1:upper_bound+1,lower_bound-1:upper_bound+1) = false;
-
-% volc_base(isnan(volc_base))= 0;
-% volc_base(volc_base ~= 0)= 1;
-
-% rad_dist_bool = rad_dist_bool + volc_base*2;
-
-rad_dist_bool_lower = rad_dist_bool_lower + volc_base;
-rad_dist_bool_lower(rad_dist_bool_lower==2) = 0;
-
-
-
+% Constrain boolean array to only points within plane extent
 rad_dist_bool = rad_dist_bool(row_x,row_y);
-rad_dist_bool_lower = rad_dist_bool_lower(row_x,row_y);
-% Density 
-p_den = create_isosurf(ax1, xmg, ymg, zmg, remove_nans(den), .0005);
-p_den = change_patch_props(p_den, true);
-% Density zoomed
-p_den_z = create_isosurf(ax2, xmg, ymg, zmg, remove_nans(den), .0005);
-p_den_z = change_patch_props(p_den_z, true);
 
+% Create isosurface for volcano
+p_den = create_isosurf(ax1, xmg, ymg, zmg, remove_nans(den), .0005);
+change_patch_props(p_den, true);
+
+% Zoomed isosurface
+p_den_z = create_isosurf(ax2, xmg, ymg, zmg, remove_nans(den), .0005);
+change_patch_props(p_den_z, true);
+
+% creeate str to be used in gif filename
 gif_str = get_gif_str(fn, isovalue);
 
-disp(strcat('Currently visualizing ',' ', gif_str))
-% figure(2);
-
+% initialize matrix to store direction of PDC
 dir_matrix = zeros(size(area_plane));
 
+disp(strcat('Currently visualizing',{' '}, gif_str))
+
 %% In loop
+% Loop through timesteps
 for i = 1:time_num
+    % Create new 3D array of ash concentration for each timestep
     ash_viz = ash_iso(:,:,:,i);
 
+    % Create another, but just for ash threshold calculatiomns
     ash_threshold = ash_viz;
     ash_threshold(ash_threshold < isovalue(1)) = 0;
-    % Ash 1
-    % ash1_ts = ash1(:,:,:,timestep);
+
+    % If quiver overlay is turned on, 3D array of u and v vectors at timestep
     if quiver_overlay
         u_i = u_vector(:,:,:,i);
         v_i = v_vector(:,:,:,i);
     end
+
+    % Grab 3D array of w vector at timestep
     w_i = w_vector(:,:,:,i);
 
+    % If quiver overlay is turned on, find quiver indexes amd plot quiver on those indices
     if quiver_overlay
         quiv_idxs = find(ash_iso(:,:,:,i) < isovalue+.01 & ash_iso(:,:,:,i) > isovalue-.01);
-%         q1 = quiver3(ax1, xmg(quiv_idxs),ymg(quiv_idxs),zmg(quiv_idxs),u_i(quiv_idxs),v_i(quiv_idxs),w_i(quiv_idxs),4,'LineWidth',2.5);
         hold(ax2,'on')
-%         streamline(ax2, xmg,ymg,zmg,u_i,v_i,w_i,xmg())
         q = quiver3(ax2, xmg(quiv_idxs),ymg(quiv_idxs),zmg(quiv_idxs),u_i(quiv_idxs),v_i(quiv_idxs),w_i(quiv_idxs),2,'LineWidth',1);
         q.Color = [0 0.4470 0.7410];
     end
+
+    % If density overlay is turned on, color isosurface by density at timestep
     if density_overlay
         p_ash = create_isosurf(ax1, xmg, ymg, zmg, ash_viz, isovalue, den_full(:,:,:,i));
         p_ash = change_patch_props(p_ash, false, color_min_max, ax1);
@@ -212,6 +219,7 @@ for i = 1:time_num
         p_ash_z = create_isosurf(ax2, xmg, ymg, zmg, ash_viz, isovalue, den_full(:,:,:,i));
         p_ash_z = change_patch_props(p_ash_z, false, color_min_max, ax2);
         hold(ax2, 'on');
+    % Otherwise, color isosurface standard grey,. 
     else
         p_ash = create_isosurf(ax1, xmg, ymg, zmg, ash_viz, isovalue);
         p_ash = change_patch_props(p_ash, false);
@@ -224,42 +232,37 @@ for i = 1:time_num
 
 
     % Main plot lighting and camera setup
-    set_lighting(ax1)
     set_cam(ax1, false, x, y, z, x_zoom_loc, y_zoom_loc)
-
+    set_lighting(ax1)
     % Zoomed plot lighting and camera setup
     set_lighting(ax2)
     set_cam(ax2, true, x, y, z, x_zoom_loc, y_zoom_loc)
 
     % Find current plume height
     plume_height_ts(i) = find_plume_height(ash_threshold, z);
-%     if i ~= 1
-%         ash_profile = squeeze(ash_viz(144/2,144/2,:))';
-%         figure; plot(ash_profile,z)
-%     end
-%     new_find_plume_height(ash_viz, w_vector(:,:,:,i), z)
-    % Find max plume height through time
+
+    % Check to see if current plume height is greater than previous max
     if i ~= 1 && all(plume_height_ts(i) >= plume_height_ts(:))
         max_plume_height = plume_height_ts(i);
     elseif i == 1 
         max_plume_height = 0;
     end
 
-    % Calclulate mass flux through each grid point
-    
+    % Calclulate mass flux through each grid point at vent plane
     grid_mass_flux = mass_flux(x,y,row_x, row_y, plane_height, den_full, area_plane, w_vector, i);
     grid_mass_flux_ash = ash_mass_flux(ash1_air_den,area_plane,w_vector,row_x,row_y,plane_height,i) ...
         + ash_mass_flux(ash2_air_den,area_plane,w_vector,row_x,row_y,plane_height,i) ...
         + ash_mass_flux(ash3_air_den,area_plane,w_vector,row_x,row_y,plane_height,i) ...
         + ash_mass_flux(ash4_air_den,area_plane,w_vector,row_x,row_y,plane_height,i);
 
-
+    % Calclulate mass flux through each grid point at lower plane
     grid_mass_flux_lower = mass_flux(x,y,row_x, row_y, lower_plane, den_full, area_plane, w_vector, i);
     grid_mass_flux_lower_ash = ash_mass_flux(ash1_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i) ...
         + ash_mass_flux(ash2_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i) ...
         + ash_mass_flux(ash3_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i) ...
         + ash_mass_flux(ash4_air_den,area_plane,w_vector,row_x,row_y,lower_plane,i);
     
+    % Ignore positive values and sum into dir_matrix for each timestep
     grid_mass_flux_lower_ash(grid_mass_flux_lower_ash>0) = 0; 
     dir_matrix = dir_matrix + grid_mass_flux_lower_ash;
 
@@ -267,20 +270,20 @@ for i = 1:time_num
         mass_total(i) = grid_mass_sum(grid_mass_flux); 
     end
 
-    
     % Calculate stability of plume
-    [flux_ratio(i), stability(i)] = stability_calc(x,y,grid_mass_flux_ash, grid_mass_flux_lower_ash, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i);
+    [flux_ratio(i), stability(i)] = stability_calc(grid_mass_flux_ash, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, i);
     
-
-%     pause
+    % Draw text objects 
     text_objs = draw_text(ax1, x, y, z, i, time_arr, flux_ratio(i), max_plume_height);
     
     % Set figure size and fontsize
     set_figure_props(18)
     
     shg
-%     pause
+
     create_gif(i, strcat(gif_str,'.gif'))
+
+    % Delete all patches and lights so that they don't overlap on next timestep
     delete(findall(gcf,'Type','light'))
     if quiver_overlay
         patches = {p_ash p_ash_z q};
@@ -297,15 +300,19 @@ for i = 1:time_num
 end
 
 %% out of loop
+
+% Calculate domain flux if true
 if domain_flux == true
     domain_flux_calc(ash1, ash2, ash3, ash4, time_num, z)
 end
 
+% Calculate statistics of flux ratio
 [flux_ratio_mean, flux_ratio_med, flux_ratio_SD] = stat_calc(flux_ratio);
 
-% Calculate neutral buoyancy height
+% Calculate neutral buoyancy height (unreliable)
 [NBH, NBH_err] = NBH_calc(ash_threshold, x, y, z);
 
+% Calculate deposited ash if set to true
 if dep_calc
     % Sum up final ash deposition
     ash_dep_mass = planar_density2mass(ash1_dep(row_x,row_y),area_plane) + planar_density2mass(ash2_dep(row_x,row_y),area_plane) + planar_density2mass(ash3_dep(row_x,row_y),area_plane) + planar_density2mass(ash4_dep(row_x,row_y),area_plane);
@@ -317,10 +324,12 @@ if dep_calc
     mass_plane_final/(mass_plane_final + ash_dep_mass)
 end
 
+% Save PDC directionality matrix 
 save(strcat(gif_str,'.mat'),'dir_matrix')
 
 disp('Done visualizing in:')
 toc
+
 function data = read_datafile(fn, tracername)
     %{
     Returns array of the specified tracername 
@@ -346,10 +355,20 @@ function data = read_datafile(fn, tracername)
 
     end
     netcdf.close(ncid)
-%     data = ncread(fn,tracername);
 end
 
 function ash_names = find_num_trac(fn)
+    %{
+    Returns array of names of ash tracers
+
+    Parameters
+    ----------
+    fn (str): full filename of netcdf data file
+
+    Returns
+    ----------
+    ash_names (array): data array of ash tracer names
+    %}
     file_info = ncinfo(fn);
     for i_func = 1:length(file_info.Variables)
         var_names{i_func} = file_info.Variables(i_func).Name;
@@ -445,7 +464,8 @@ function timestep_num = find_timesteps(data)
     timestep_num = data_dim(4);
 end
 
-function [ash_ts] = get_viz_trac(tracer_name)
+function ash_ts = get_viz_trac(tracer_name)
+
     if strcmp(tracer_name, 'ash1')
         ash_ts = ash1(:,:,:,:);
     elseif strcmp(tracer_name, 'ash2')
@@ -573,6 +593,7 @@ function set_cam(axnum, zoom, x, y, z, x_zoom_loc, y_zoom_loc)
         zlim(axnum,[0 4.3])
     elseif zoom == false
         view(axnum,90,0)
+        % view(-62.907905123533659,14.341768859374485)
         
         xlim(axnum,[min(x) max(x)])
         ylim(axnum,[min(y) max(y)])
@@ -603,12 +624,29 @@ function set_figure_props(fontsize)
 end
 
 function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
-    % Find where volcano stops and air begins
+    %{
+    Finds the radial distance from the vent to the crater rim edge. Returns a 2D array
+
+    Parameters
+    ----------
+    density (arr): 3D density array
+    x (arr): x values
+    y (arr): y values
+    z (arr): z values
+    xmg, ymg (arr): meshgrids for x and y
+    plane_height (int): height of plane to find crater rim edge
+
+    Returns
+    ----------
+    rad_dist_bool (arr): 2D array of radial distance from vent to crater rim edge
+    %}
     k=0;
+    % initialize variables
     all_nans_found = false;
     [upper_x_bool, lower_x_bool, upper_y_bool, lower_y_bool] = deal(true);
     rad_dist_bool = false(size(density(:,:,plane_height)));
 
+    % find x and y values stepping out from center until nans are found
     while all_nans_found == false
         k = k+1;
         dist_away_from_cent = x((length(x)/2)+k) - x((length(x)/2));
@@ -646,18 +684,6 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
             all_nans_found = true;
             rad_dist_bool(lower_x:upper_x,lower_y:upper_y) = true;
         end
-        
-        
-
-
-
-
-        
-%         if (length(x)/2) - k == 1
-%             
-%             break
-%         end
-
     end
         % If nan is found to early, something is wrong (in our case, this
         % only happens in the 303 m case. Instead of looking for nans,
@@ -690,8 +716,6 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
             end
             rad_dist_bool(lower_x+5:upper_x-5,lower_y+5:upper_y-5) = true;
         end
-
-    
 end
 
 function plane_height = find_plane_height(density,x,y,z,xmg,ymg,plane_offset)
@@ -841,17 +865,38 @@ function grid_mass_flux = mass_flux(x,y,row_x, row_y,plane_height, density, area
 %     close(h1)
 end
 function mass_sum_ts = grid_mass_sum(grid_mass_flux)
-    
+    %{
+    Sums up positive maass flux in grid. 
+
+    Parameters
+    ----------
+    % grid_mass_flux (Array): array containing mass flux through each cell in vent plane
+    Returns
+    ----------
+    % mass_sum_ts (float): sum of mass flux through vent plane [kg]
+    %}
     mass_sum_ts = sum(grid_mass_flux(grid_mass_flux>0),'omitnan'); % mass sum in kgs
 end
 
 function final_dep_mass = planar_density2mass(dep,area_plane)
+    %{
+    calculates deposited ash mass based on planar density and area of plane 
+
+    Parameters
+    ----------
+    % dep (Array): array containing planar density of ash in each cell of plane [g/m^2]
+    % area_plane (Array): array containing area of each chell in plane [m^2]
+    Returns
+    ----------
+    % final_dep_mass (float): sum of mass flux through vent plane [kg]
+    %}
+
     % multiply planar density by area then multiply by 1000 to convert from g/m^2 to kg
     final_dep_mass_plane = (dep .* area_plane) / 1000; 
     final_dep_mass = sum(final_dep_mass_plane(:),'omitnan');
 end
 
-function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux,grid_mass_flux_lower, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, rad_dist_bool_lower, i)
+function flux_ratio = stability_calc(grid_mass_flux, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, i)
     %{
     Calculates stability based on mass flux through the plane along with
     ash concentrations
@@ -867,63 +912,23 @@ function [flux_ratio, stability] = stability_calc(x,y,grid_mass_flux,grid_mass_f
     row_x,row_y (1D vectors): indices of plane in both x and y dimensions
     plane_height (int): index representing height above the domain where
     vent exists. 
+    rad_dist_bool (Array): array containing boolean values for within crater rim vs outside crater rim
     i (int): current timestep index
     Returns
     ----------
-    stability (int): array containing mass flux through each cell in
-    plane
+    flux_ratio (float): Calculated flux ratio for current timestep
     %}
-    ash_weighted_flux = grid_mass_flux .* (ash1(row_x,row_y,plane_height,i) ...
-        + ash2(row_x,row_y,plane_height,i) ...
-        + ash3(row_x,row_y,plane_height,i) ...
-        + ash4(row_x,row_y,plane_height,i));
-%     ash_weighted_flux = grid_mass_flux .* ash4(row_x,row_y,plane_height,i);
     
-%     pos_flux = sum(ash_weighted_flux(ash_weighted_flux>0),'omitnan');
-%     neg_flux = sum(ash_weighted_flux(ash_weighted_flux<0),'omitnan');
-%     tot_flux = sum(sum(abs(ash_weighted_flux),'omitnan'));
-%     flux_ratio = pos_flux/tot_flux;
-%     flux_ratio = pos_flux/-neg_flux;
-
-
-    inner = sum(ash_weighted_flux(rad_dist_bool==1 & ash_weighted_flux > 0),'omitnan');
-%     inner = sum(ash_weighted_flux(ash_weighted_flux > 0),'omitnan');
-    outer = sum(ash_weighted_flux(rad_dist_bool==0 & ash_weighted_flux < 0),'omitnan');
-     
+    % Inner mass flux
     inner_GMF = sum(grid_mass_flux(rad_dist_bool==1 & grid_mass_flux > 0),'omitnan');
+
+    % Outer mass flux
     outer_GMF = sum(grid_mass_flux(rad_dist_bool==0 & grid_mass_flux < 0),'omitnan');
 
-%     inner_GMF = sum(grid_mass_flux(grid_mass_flux>0));
-%     outer_GMF = sum(grid_mass_flux(grid_mass_flux<0));
-
-    outer_lower_GMF = sum(grid_mass_flux_lower(rad_dist_bool_lower==1 & grid_mass_flux_lower < 0),'omitnan');
-    
-%     "upper, lower plane comparison"
+    % Ratio of inner to outer mass flux
     flux_ratio = inner_GMF/(abs(outer_GMF)+inner_GMF);
-%     "upper plane comparison"
-%     inner_GMF/(abs(outer_GMF)+inner_GMF)
-%     flux_ratio = abs(inner)/(abs(outer)+abs(inner));
-    
-    if flux_ratio > 0.80
-        stability = 1; %stable
-    elseif flux_ratio <= 0.80 && flux_ratio >= .2
-        stability = 2; %partially  unstable
-    elseif flux_ratio < .2 
-        stability = 3; %fully unstable
-    else
-        stability = NaN;
-    end
 
 end
-
-function p_height = new_find_plume_height(ash_viz, w_vector, z)
-    for j_func = length(z):-1:1
-        up_v = w_vector(:,:,j_func);
-        [min_v,loc_min_v] = min(up_v(:));
-        [max_v,loc_max_v] = max(up_v(:));
-    end
-end
-
 
 function plume_height = find_plume_height(ash_threshold,z)
     %{
@@ -939,16 +944,18 @@ function plume_height = find_plume_height(ash_threshold,z)
     max_plume_height (float): maximum plume height
     %}
     
+    % Loop downwards until ash threshold is not 0. This is the max plume height
     for j_func = length(z):-1:1
         if sum(sum(ash_threshold(:,:,j_func))) ~= 0
             plume_height = z(j_func);
             break
         end
     end
+
+    % If ash threshold is 0 for all values, set plume height to 0
     if max(max(max(ash_threshold))) == 0
         plume_height = 0;
     end
-    
 end
 
 function text_objs = draw_text(ax1, x, y, z, i, time_arr, flux_ratio, max_plume_height)
@@ -997,7 +1004,6 @@ function domain_flux_calc(ash1, ash2, ash3, ash4, time_num, z)
     ----------
     %}
     
-    % sum 
     for i_func = 1:time_num-1
         ash1_row_ts(:,i_func) = row_sum_ts(ash1(:,:,:,i_func));
         ash2_row_ts(:,i_func) = row_sum_ts(ash2(:,:,:,i_func));
@@ -1023,16 +1029,36 @@ function domain_flux_calc(ash1, ash2, ash3, ash4, time_num, z)
 end
 
 function last_step_domain_ash_var = sum_remaining_ash(ash_var, z)
+    %{
+    Sums up the remaining ash in the domain at the last timestep
+
+    Parameters
+    ----------    
+    ash_var (4D array): ash array through time
+    z (1D vector): z values containing vertical grid information
     
+    Returns
+    ----------
+    last_step_domain_ash_var (1D vector): 1D vector containing the sum of ash in the domain at the last timestep
+    %}
     for i_func = 1:length(z)
         last_step_domain_ash_var(i_func) = sum(sum(ash_var(:,:,i_func)));
     end
     
 end
 
-function  row_sum = row_sum_ts(ash_var)
-    
-    
+function row_sum = row_sum_ts(ash_var)
+     %{
+    Sums up the ash in the domain at each timestep row wise throughout the domain
+
+    Parameters
+    ----------    
+    ash_var (4D array): ash array through time
+
+    Returns
+    ----------
+    row_sum (1D vector): 1D vector containing the sum of ash in the domain at each timestep
+    %}
     domain_exit1 = squeeze(ash_var(:,end,:)); % side
     domain_exit2 = squeeze(ash_var(:,1,:)); % side
     domain_exit3 = squeeze(ash_var(end,:,:)); % side
@@ -1054,6 +1080,20 @@ function  row_sum = row_sum_ts(ash_var)
 end
 
 function gif_str = get_gif_str(fn, isovalue)
+    %{
+    Creates a string to be used in the gif filename
+
+    Parameters
+    ----------    
+    fn (str): filename of the netcdf ATHAM output file
+    isovalue (1D vector): vector containing the isovalue(s) used in the visualization
+
+    Returns
+    ----------
+    gif_str (str): string to be used in the gif filename
+    %}
+
+    % Split fn into distinct parts
     split_dir = regexp(fn,filesep,'split');
     gif_str = split_dir{end};
     if isempty(gif_str)
@@ -1064,17 +1104,45 @@ function gif_str = get_gif_str(fn, isovalue)
         temp_str = strcat(temp_str,'_',num2str(isovalue(i_func)));
     end
     gif_str = strcat(gif_str,'_iso',temp_str);
-%     gif_str = strcat(gif_str,'_iso_',num2str(isovalue));
 end
 
 function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD] = stat_calc(flux_ratio)
+    %{
+    Calculates the mean, median, and standard deviation of the flux ratio vector
+    
+    Parameters
+    ----------    
+    flux_ratio (1D vector): vector containing the flux ratio values for every timestep
+
+    Returns
+    ----------
+    flux_ratio_mean (float): mean of the flux ratio vector
+    flux_ratio_med (float): median of the flux ratio vector
+    flux_ratio_SD (float): standard deviation of the flux ratio vector
+    %}
     flux_ratio_mean = mean(flux_ratio(1:end-1),'omitnan');
     flux_ratio_med = median(flux_ratio(1:end-1),'omitnan');
     flux_ratio_SD = std(flux_ratio(1:end-1),'omitnan');
 end
 
 function [NBH, NBH_err] = NBH_calc(ash_threshold,x,y,z)
-    for i_func = length(y):-1:1 %Go backwards through XZ plane (for some reason x and y have to be flipped here, god knows why. I'm so sorry to whoever has to use this code after me
+    %{
+    Calculates the Neutral Buoyancy Height (NBH) and NBH error from the ash threshold array. Currently unreliable
+    
+    Parameters
+    ----------
+    ash_threshold (3D array): ash threshold array
+    x,y,z (1D vectors): x,y,z values containing grid information
+    
+    Returns
+    ----------
+    NBH (float): Nvalue
+    NBH_err (float): NBH error
+    %}
+
+    % Go backwards through XZ plane (for some reason x and y have to be flipped here, god knows why. 
+    % I'm so sorry to whoever has to use this code after me)
+    for i_func = length(y):-1:1 
         if max(max(squeeze(ash_threshold(i_func,:,:)))) ~= 0
             break
         end
@@ -1095,89 +1163,29 @@ function [NBH, NBH_err] = NBH_calc(ash_threshold,x,y,z)
     end
              
 end
-function mask = createCirclesMask(varargin)
-%xDim,yDim,centers,radii)
-% Create a binary mask from circle centers and radii
-%
-% SYNTAX:
-% mask = createCirclesMask([xDim,yDim],centers,radii);
-% OR
-% mask = createCirclesMask(I,centers,radii);
-%
-% INPUTS: 
-% [XDIM, YDIM]   A 1x2 vector indicating the size of the desired
-%                mask, as returned by [xDim,yDim,~] = size(img);
-%  
-% I              As an alternate to specifying the size of the mask 
-%                (as above), you may specify an input image, I,  from which
-%                size metrics are to be determined.
-% 
-% CENTERS        An m x 2 vector of [x, y] coordinates of circle centers
-%
-% RADII          An m x 1 vector of circle radii
-%
-% OUTPUTS:
-% MASK           A logical mask of size [xDim,yDim], true where the circles
-%                are indicated, false elsewhere.
-%
-%%% EXAMPLE 1:
-%   img = imread('coins.png');
-%   [centers,radii] = imfindcircles(img,[20 30],...
-%      'Sensitivity',0.8500,...
-%      'EdgeThreshold',0.30,...
-%      'Method','PhaseCode',...
-%      'ObjectPolarity','Bright');
-%   figure
-%   subplot(1,2,1);
-%   imshow(img)
-%   mask = createCirclesMask(img,centers,radii);
-%   subplot(1,2,2);
-%   imshow(mask)
-%
-%%% EXAMPLE 2:
-%   % Note: Mask creation is the same as in Example 1, but the image is
-%   % passed in, rather than the size of the image.
-%
-%   img = imread('coins.png');
-%   [centers,radii] = imfindcircles(img,[20 30],...
-%      'Sensitivity',0.8500,...
-%      'EdgeThreshold',0.30,...
-%      'Method','PhaseCode',...
-%      'ObjectPolarity','Bright');
-%   mask = createCirclesMask(size(img),centers,radii);
-%
-% See Also: imfindcircles, viscircles, CircleFinder
-%
-% Brett Shoelson, PhD
-% 9/22/2014
-% Comments, suggestions welcome: brett.shoelson@mathworks.com
-% Copyright 2014 The MathWorks, Inc.
-narginchk(3,3)
-if numel(varargin{1}) == 2
-	% SIZE specified
-	xDim = varargin{1}(1);
-	yDim = varargin{1}(2);
-else
-	% IMAGE specified
-	[xDim,yDim] = size(varargin{1});
-end
-centers = varargin{2};
-radii = varargin{3};
-xc = centers(:,1);
-yc = centers(:,2);
-[xx,yy] = meshgrid(1:yDim,1:xDim);
-mask = false(xDim,yDim);
-for ii = 1:numel(radii)
-	mask = mask | hypot(xx - xc(ii), yy - yc(ii)) <= radii(ii);
-end
-end
+
 function create_gif(i,gif_str)
+    %{
+    Creates a gif
+    
+    Parameters
+    ----------
+    i (int): timestep
+    gif_str (str): string to be used in the gif filename
+    
+    Returns
+    ----------
+    None
+
+    %}
+
+    % Get frame from current figure and add it to the gif
     F = getframe(gcf);
     im = frame2im(F);
     [imind,cm] = rgb2ind(im,256);
     if i == 1 
       imwrite(imind,cm,gif_str,'gif', 'Loopcount',inf,'DelayTime', .1); 
-    else 
+    else
       imwrite(imind,cm,gif_str,'gif','WriteMode','append','DelayTime', .1); 
     end
 end

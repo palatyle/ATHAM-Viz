@@ -1,11 +1,12 @@
 #%%
-import pandas as pd
+import matplotlib.cm as mcm
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib.colors import Normalize
 
-
-# plt.style.use('seaborn-talk')
-# plt.rcParams['svg.fonttype'] = 'none'
+# Set up plot parameters
 plt.rcParams.update({'font.sans-serif':'Myriad Pro'})
 plt.rcParams.update({'xtick.labelsize': 16, 
                      'ytick.labelsize': 16,
@@ -14,22 +15,24 @@ plt.rcParams.update({'xtick.labelsize': 16,
                      'axes.labelsize': 16,
                      'axes.labelsize': 16,
                      'legend.fontsize': 14,
-                     'legend.title_fontsize': 14,
+                     'legend.title_fontsize': 14,      
                      'figure.facecolor':(240/255,240/255,240/255),
                      'savefig.facecolor':(240/255,240/255,240/255)})
 
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
+
 # Define vent geometry and environmental parameters (for use later in for loops)
 vent_vel = [50, 70, 100, 150, 300] # m/s
 vent_rad = [20, 30, 75, 127, 303] # m
 wind_speed = range(0,55,5) # m/s
 wind_speed_str = [format(x, '02d') for x in wind_speed]
-lats = ['tropical', 'polar', 'mid_lat']
-lats_output = ['Tropical', 'Polar', 'Mid-Lat']
+lats = ['tropical', 'mid_lat', 'polar']
+lats_output = ['Tropical','Mid-Lat','Polar']
 bulk_density = 4.37 #kg/m^3
 
-input_dir = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v7_stability_calc/'
+# Define input directory containing stability parameters for every simulation
+input_dir = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v8_stability_calc/'
 
 # Read in all data as multiple dataframes in a python dictionary
 dataframes_dict = {}
@@ -65,9 +68,16 @@ for lat_idx, lat in enumerate(lats):
             vent = '127_5'
         vent_speed_group = dataframes_dict[lat + '_' + str(vent)].groupby('Vent speed (m/s)') # group by vent speed
 
-        colors_vent_speed = plt.cm.viridis(np.linspace(0,1,num=vent_speed_group.ngroups)) # get colors for each group
-
+        colors_vent_speed = ([0/255, 119/255, 187/255],[51/255, 187/255, 238/255],[0/255, 153/255, 136/255],[238/255, 119/255, 51/255],[204/255, 51/255, 17/255])
+        
         for count, value in enumerate(vent_vel):
+            ax1[idx].errorbar(vent_speed_group.get_group(value)['Wind Speed (m/s)'],
+                vent_speed_group.get_group(value)['stability mean'],
+                yerr=vent_speed_group.get_group(value)['stability SD']*100,
+                fmt = 'none',
+                ecolor = 'black',
+                barsabove=False)
+            
             vent_speed_group.get_group(value).sort_values(by=['Wind Speed (m/s)']).plot(
             kind='line',
             style = '-o', 
@@ -78,12 +88,7 @@ for lat_idx, lat in enumerate(lats):
             color=colors_vent_speed[count],
             ax=ax1[idx])
 
-            ax1[idx].errorbar(vent_speed_group.get_group(value)['Wind Speed (m/s)'],
-                vent_speed_group.get_group(value)['stability mean'],
-                yerr=vent_speed_group.get_group(value)['stability SD']*100,
-                fmt = 'none',
-                ecolor = 'black',
-                barsabove=True)
+
             ax1[idx].set_ylim(10,100)
     
         # Add ticks and labels based on wind_speed vector
@@ -176,30 +181,13 @@ for lat_idx, lat in enumerate(lats):
 print('Done')
 
 
-# %%
+# %% Plume height vs stability
 trop_max_plume_heights = []
 mid_lat_max_plume_heights = []
 polar_max_plume_heights = []
 
 
 flattened_df = pd.concat(dataframes_dict, ignore_index=True, axis = 0)
-
-
-# for lat in lats:
-#     for vent in vent_rad:
-#         if vent == 127:
-#             vent = '127_5'
-#         if lat == 'tropical':
-            
-#             trop_max_plume_heights.extend(dataframes_dict[lat + '_' + str(vent)]['Max plume height (km)'])
-#         elif lat == 'mid_lat':
-#             mid_lat_max_plume_heights.extend(dataframes_dict[lat + '_' + str(vent)]['Max plume height (km)'])
-#         elif lat == 'polar':
-#             polar_max_plume_heights.extend(dataframes_dict[lat + '_' + str(vent)]['Max plume height (km)'])
-
-
-# flattened_df = np.vstack((trop_max_plume_heights, mid_lat_max_plume_heights, polar_max_plume_heights))
-import seaborn as sns
 
 fig3, ax3 = plt.subplots(figsize=(10,8))
 
@@ -216,15 +204,21 @@ ax4.set_axisbelow(True)
 ax4.set_title('Average Stability vs. Atmosphere', fontsize = 22, weight = 700, stretch = 'condensed')
 fig4.savefig(input_dir+"stabilityvsAtmos.pdf", format = 'pdf',bbox_inches=None, dpi=300)
 
-# fig5, ax5 = plt.subplots(figsize=(10,8))
 
-# sns.violinplot(x = 'Wind Speed (m/s)', y = 'stability mean', data = flattened_df, bw=0.25 , ax = ax5)
-# ax5.set_axisbelow(True)
-# ax5.set_title('Average Stability vs. Atmosphere', fontsize = 22, weight = 700, stretch = 'condensed')
+colors = ['#b2df8a','#1f78b4','#a6cee3']
+custom_palette = sns.set_palette(sns.color_palette(colors))
+
+fig4_5 = sns.relplot(data=flattened_df,x='Wind Speed (m/s)',y='Max plume height (km)',hue='Atmosphere',kind='line',col='Vent Radius (m)',col_wrap=3,palette = custom_palette)
+
+fig4_5.savefig(input_dir+"plume_height_vs_wind_speed.pdf", format = 'pdf',bbox_inches=None, dpi=300)
 
 
 
-# %%
+fig4_6 = sns.relplot(data=flattened_df,x='stability mean',y='Max plume height (km)',hue='Atmosphere',col='Vent Radius (m)',col_wrap=3,palette = custom_palette)
+
+fig4_6.savefig(input_dir+"plume_height_vs_stability.pdf", format = 'pdf',bbox_inches=None, dpi=300)
+
+# %% Wind speed vs MER
 for lat in lats:
     # Create Figure and axes. Create 4x1 subplot grid
     fig5, ax5 = plt.subplots(len(vent_rad),1,figsize=(10,8))
@@ -234,10 +228,8 @@ for lat in lats:
         if vent == 127:
             vent = '127_5'
 
-        
         vent_df = dataframes_dict[lat + '_' + str(vent)]
         
-        # vent_df.plot(kind='scatter',x='MER',y='Wind Speed (m/s)', c='stability mean', s=100, logx=True, colorbar = True, cmap='viridis', ax=ax5[idx])
         sc = ax5[idx].scatter(vent_df['MER'], vent_df['Wind Speed (m/s)'], c=vent_df['stability mean'], s=100, cmap='viridis')
         ax5[idx].set_xscale('log')
         ax5[idx].set(ylabel=None)
@@ -248,8 +240,6 @@ for lat in lats:
 
         plt.colorbar(sc, label = 'Stability (%)',location='right', aspect = 10, ax=ax5[idx])
 
-        # ax5[idx].colorbar(label='Stability (%)',location='right')
-
 
         if vent != vent_rad[-1]:
             ax5[idx].set(xlabel=None)
@@ -259,12 +249,10 @@ for lat in lats:
     fig5.subplots_adjust(top=0.95,bottom = 0.18)   
     fig5.suptitle(lats_output[lat_idx] +' ' + 'Wind Speed vs. Mass Eruption Rate',y=.99, fontsize = 22, weight=700, stretch = 'condensed')
 
-# %%
-from matplotlib.colors import Normalize
-import matplotlib.cm as cm
-cmap = cm.get_cmap('viridis')
+# %% Wind Speed vs MER alternate
+cmap = mcm.get_cmap('viridis')
 normalizer = Normalize(0,100)
-im = cm.ScalarMappable(norm=normalizer, cmap=cmap)
+im = mcm.ScalarMappable(norm=normalizer, cmap=cmap)
 for lat in lats:
     
     # Create Figure and axes. Create 4x1 subplot grid
@@ -287,10 +275,6 @@ for lat in lats:
         ax6[idx].grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
         ax6[idx].set_axisbelow(True)
 
-        # plt.colorbar(label = 'Stability (%)',location='right', ax=ax5[idx])
-
-        # ax5[idx].colorbar(label='Stability (%)',location='right')
-
 
         if vent != vent_rad[-1]:
             ax5[idx].set(xlabel=None)
@@ -300,10 +284,7 @@ for lat in lats:
     fig6.subplots_adjust(top=0.95,bottom = 0.18)   
     fig6.suptitle(lats_output[lat_idx] +' ' + 'Wind Speed vs. Mass Eruption Rate',y=.99, fontsize = 22, weight=700, stretch = 'condensed')
     fig6.colorbar(im,ax=ax6.ravel().tolist())
-
-print('hi')
-# %%
-
+# %% Max plume height vs wind speed
 for lat_idx, lat in enumerate(lats):
 # Create Figure and axes. Create 4x1 subplot grid
     fig7, ax7 = plt.subplots(len(vent_rad),1,figsize=(10,8))
@@ -326,9 +307,7 @@ for lat_idx, lat in enumerate(lats):
             grid = True, 
             color=colors_vent_speed[count],
             ax=ax7[idx])
-            
-            # ax7[idx].set_ylim(0,50)
-    
+
         # Add ticks and labels based on wind_speed vector
         ax7[idx].set_xticks(wind_speed)
         ax7[idx].minorticks_on()
@@ -359,8 +338,8 @@ for lat_idx, lat in enumerate(lats):
 
 
 
-# %% Flat runs
-fn = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v7_stability_calc/tropical_flat_75m.txt'
+# %% Low alt winds vs high alt winds
+fn = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v8_stability_calc/tropical_flat_75m.txt'
 df = pd.read_csv(fn)
 df=df.replace('ms','',regex=True)
 df['Wind Speed (m/s)'] = df['Wind Speed (m/s)'].astype(int)
@@ -372,7 +351,8 @@ vent_speed_group = df.groupby('Vent speed (m/s)') # group by vent speed
 fig8, ax8 = plt.subplots(2,figsize=(10,8))
 fig8.autolayout = False
 
-colors_vent_speed_flat = plt.cm.viridis(np.linspace(0,1,num=vent_speed_group.ngroups)) # get colors for each group
+# colors_vent_speed_flat = plt.cm.viridis(np.linspace(0,1,num=vent_speed_group.ngroups)) # get colors for each group
+colors_vent_speed_flat = ([0/255, 153/255, 136/255],[0/255, 119/255, 187/255],[204/255, 51/255, 17/255])
 
 for count,value in enumerate([50,70,100]):
     vent_speed_group.get_group(value).sort_values(by=['Wind Speed (m/s)']).plot(
@@ -401,7 +381,7 @@ ax8[0].minorticks_on()
 # Add grid minor gird lines with a dashed, semi transparent appearance. 
 ax8[0].grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
 
-fn2 = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v7_stability_calc/tropical_step_75m.txt'
+fn2 = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v8_stability_calc/tropical_step_75m.txt'
 df2 = pd.read_csv(fn2)
 df2=df2.replace('ms','',regex=True)
 df2['Wind Speed (m/s)'] = df2['Wind Speed (m/s)'].astype(int)
@@ -410,7 +390,6 @@ df2['stability mean'] = df2['stability mean'] * 100
 
 
 vent_speed_group = df2.groupby('Vent speed (m/s)') # group by vent speed
-colors_vent_speed_flat = plt.cm.viridis(np.linspace(0,1,num=vent_speed_group.ngroups)) # get colors for each group
 
 for count,value in enumerate([50,70,100]):
     vent_speed_group.get_group(value).sort_values(by=['Wind Speed (m/s)']).plot(
@@ -449,11 +428,12 @@ fig8.subplots_adjust(top=0.95,bottom = 0.18)
 fig8.supxlabel('Wind Speed (m/s)', x=0)
 fig8.savefig(input_dir+ "75m_tropical_flat_StabilityVsWind.pdf", format = 'pdf',bbox_inches=None, dpi=300)
 
-# %%
+# %% Atmosphere comparison plots
 fig9, ax9 = plt.subplots(1,len(vent_rad),figsize=(10,8))
 fig9.autolayout = False
 
-
+# order = 
+colors_vent_speed = ([0/255, 119/255, 187/255],[51/255, 187/255, 238/255],[0/255, 153/255, 136/255],[238/255, 119/255, 51/255],[204/255, 51/255, 17/255])
 for rad_count, rad_value in enumerate(vent_rad):
     if rad_value == 127:
         rad_value = '127_5'
@@ -467,7 +447,7 @@ for rad_count, rad_value in enumerate(vent_rad):
             print("Missing data for vent speed: " + str(vel_value) + " and vent radius: " + str(rad_value))
             continue
 
-    ax9[rad_count].set_title('Vent Radius = '+str(rad_value)+' m')
+    ax9[rad_count].set_title('R = '+str(rad_value)+' m')
     ax9[rad_count].minorticks_on()
     ax9[rad_count].set_ylim(0,100)
 
