@@ -640,6 +640,7 @@ function rad_dist_bool = get_rad_array(density,x,y,z,xmg,ymg,plane_height)
     ----------
     rad_dist_bool (arr): 2D array of radial distance from vent to crater rim edge
     %}
+
     k=0;
     % initialize variables
     all_nans_found = false;
