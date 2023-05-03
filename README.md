@@ -11,10 +11,10 @@
 
 `plane_dir_viz.m` -- Script to visualize the directionality output from `ATHAM_viz_ts.m`
 
-## Geometry files
+## Geometry files used in `plane_dir_viz.m`
 `coarse_geo.mat` -- .mat file containing geometry of the ATHAM grid for the coarse grid used for larger vent radii.
 
-`fine_geo.mat` -- .mat file containing geometry of the ATHAM grid for the fine grid used for larger vent radii.
+`fine_geo.mat` -- .mat file containing geometry of the ATHAM grid for the fine grid used for smaller vent radii.
 
 ## Visualization output
 `direction_out/` -- Directory containing the diretionality .mat files for each simulation
