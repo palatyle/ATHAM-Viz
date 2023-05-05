@@ -19,4 +19,20 @@
 ## Visualization output
 `direction_out/` -- Directory containing the diretionality .mat files for each simulation
 
-`v8_stability_calc` -- Directory containing the stability output from `ATHAM_viz_multi.m`
+`v8_stability_calc/` -- Directory containing the stability output from `ATHAM_viz_multi.m`
+
+## Shell scripts
+`batch_pbs_scripts/batch_pbs_create.sh` -- Main shell script used to create ATHAM simulations for vent sizes of 75, 127.5, and 303 meters. Also submits to PBS queue.
+
+`batch_pbs_scripts/batch_pbs_create_flat.sh` -- Shell script used to create ATHAM simulations for the flat(uniform) atmospheric profile. Also submits to PBS queue.
+
+`batch_pbs_scripts/batch_pbs_create_step.sh` -- Shell script used to create ATHAM simulations for the step function atmospheric profile. Also submits to PBS queue.
+
+`batch_pbs_scripts/batch_small_vent.sh` -- Shell script used to create ATHAM simulations for vent sizes of 10 and 30 meters meters. Also submits to PBS queue.
+
+`batch_pbs_scripts/batch_small_vent_144.sh` -- Shell script used to create ATHAM simulations for vent sizes of 10 and 30 meters meters running on 144 cores. Also submits to PBS queue.
+
+## Inputs
+`PBS_files/` -- Directory containing all PBS submission files used in simulations. These submission files reference inputs in `IO_ref/`
+
+`IO_ref/` -- Input files for ATHAM. 
