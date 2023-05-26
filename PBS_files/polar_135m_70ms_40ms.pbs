@@ -1,0 +1,36 @@
+#!/bin/bash
+
+#PBS -S /bin/bash
+
+#PBS -j oe
+#PBS -l place=free
+
+#PBS -N polar_135m_70ms_40ms
+#PBS -m abe
+#PBS -M palatyle@isu.edu
+#PBS -l select=2:ncpus=32:mpiprocs=32
+#PBS -l walltime=168:00:00
+
+#PBS -P edu_res
+
+cd $PBS_O_WORKDIR
+source /etc/profile.d/modules.sh
+
+module load netcdf/c-4.7.4_gcc9.3.0
+module load netcdf/f-4.7.4_gcc9.3.0
+module load pnetcdf/1.12.2
+
+####----------------------------------------
+#### Flag key for non-default IO storage:  
+#### i = input directory                    
+#### v = INPUT_volcano filename             
+#### p = INPUT_profile filename             
+#### a = INPUT_atham_setup filename         
+#### d = INPUT_dynamic_setup filename       
+#### o = output directory                   
+#### f = output file prefix                 
+####----------------------------------------
+
+mpirun ./exec/atham_st -i IO_ref -o /scratch/palatyle/polar_135m_70ms_40ms -f atham -a INPUT_atham_setup -p INPUT_profile_40mps_polar -v INPUT_volcano_135_70 -d INPUT_dynamic_setup
+
+

@@ -24,7 +24,7 @@ plt.rcParams['ps.fonttype'] = 42
 
 # Define vent geometry and environmental parameters (for use later in for loops)
 vent_vel = [50, 70, 100, 150, 300] # m/s
-vent_rad = [20, 30, 75, 127, 303] # m
+vent_rad = [15, 22, 75, 135, 315] # m
 wind_speed = range(0,55,5) # m/s
 wind_speed_str = [format(x, '02d') for x in wind_speed]
 lats = ['tropical', 'mid_lat', 'polar']
@@ -32,14 +32,14 @@ lats_output = ['Tropical','Mid-Lat','Polar']
 bulk_density = 4.37 #kg/m^3
 
 # Define input directory containing stability parameters for every simulation
-input_dir = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v8_stability_calc/'
+input_dir = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM-Viz/v8_stability_calc/'
 
 # Read in all data as multiple dataframes in a python dictionary
 dataframes_dict = {}
 for lat in lats:
     for vent_idx,vent in enumerate(vent_rad):
-        if vent == 127:
-            vent = '127_5'
+        if vent == 22:
+            vent = '22_5'
         # Create filename
         fn = input_dir + lat + '_' + str(vent) + 'm.txt'
 
@@ -64,8 +64,8 @@ for lat_idx, lat in enumerate(lats):
     # Turn autolayout off since we're doing some sick, custom shit
     fig1.autolayout = False
     for idx, vent in enumerate(vent_rad):
-        if vent == 127:
-            vent = '127_5'
+        if vent == 22:
+            vent = '22_5'
         vent_speed_group = dataframes_dict[lat + '_' + str(vent)].groupby('Vent speed (m/s)') # group by vent speed
 
         colors_vent_speed = ([0/255, 119/255, 187/255],[51/255, 187/255, 238/255],[0/255, 153/255, 136/255],[238/255, 119/255, 51/255],[204/255, 51/255, 17/255])
@@ -97,8 +97,8 @@ for lat_idx, lat in enumerate(lats):
         # Add grid minor gird lines with a dashed, semi transparent appearance. 
         ax1[idx].grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
 
-        if vent == '127_5':
-            text_str = '127.5' + ' m Vent Radius'
+        if vent == '22_5':
+            text_str = '22.5' + ' m Vent Radius'
         else:
             text_str = str(vent) + ' m Vent Radius'
 
@@ -129,8 +129,8 @@ for lat_idx, lat in enumerate(lats):
     # Turn autolayout off since we're doing some custom shit
     fig2.autolayout = False
     for idx,vent in enumerate(vent_rad):
-        if vent == 127:
-            vent = '127_5'
+        if vent == 22:
+            vent = '22_5'
         wind_speed_group = dataframes_dict[lat + '_' + str(vent)].groupby('Wind Speed (m/s)') # group by wind speed
 
         colors_wind_speed = plt.cm.viridis(np.linspace(0,1,num=wind_speed_group.ngroups)) # get colors for each group
@@ -154,8 +154,8 @@ for lat_idx, lat in enumerate(lats):
         # Add grid minor gird lines with a dashed, semi transparent appearance. 
         ax2[idx].grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
 
-        if vent == '127_5':
-            text_str = '127.5' + ' m Vent Radius'
+        if vent == '22_5':
+            text_str = '22.5' + ' m Vent Radius'
         else:
             text_str = str(vent) + ' m Vent Radius'
 
@@ -225,8 +225,8 @@ for lat in lats:
     # Turn autolayout off since we're doing some custom shit
     fig5.autolayout = False
     for idx, vent in enumerate(vent_rad):
-        if vent == 127:
-            vent = '127_5'
+        if vent == 22:
+            vent = '22_5'
 
         vent_df = dataframes_dict[lat + '_' + str(vent)]
         
@@ -260,8 +260,8 @@ for lat in lats:
     # Turn autolayout off since we're doing some custom shit
     fig6.autolayout = False
     for idx, vent in enumerate(vent_rad):
-        if vent == 127:
-            vent = '127_5'
+        if vent == 22:
+            vent = '22_5'
 
         
         vent_df = dataframes_dict[lat + '_' + str(vent)]
@@ -291,8 +291,8 @@ for lat_idx, lat in enumerate(lats):
     # Turn autolayout off since we're doing some sick, custom shit
     fig7.autolayout = False
     for idx, vent in enumerate(vent_rad):
-        if vent == 127:
-            vent = '127_5'
+        if vent == 22:
+            vent = '22_5'
         vent_speed_group = dataframes_dict[lat + '_' + str(vent)].groupby('Vent speed (m/s)') # group by vent speed
 
         colors_vent_speed = plt.cm.viridis(np.linspace(0,1,num=vent_speed_group.ngroups)) # get colors for each group
@@ -314,8 +314,8 @@ for lat_idx, lat in enumerate(lats):
         # Add grid minor gird lines with a dashed, semi transparent appearance. 
         ax7[idx].grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
 
-        if vent == '127_5':
-            text_str = '127.5' + ' m Vent Radius'
+        if vent == '22_5':
+            text_str = '22.5' + ' m Vent Radius'
         else:
             text_str = str(vent) + ' m Vent Radius'
 
@@ -339,7 +339,7 @@ for lat_idx, lat in enumerate(lats):
 
 
 # %% Low alt winds vs high alt winds
-fn = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v8_stability_calc/tropical_flat_75m.txt'
+fn = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM-Viz/v8_stability_calc/tropical_flat_75m.txt'
 df = pd.read_csv(fn)
 df=df.replace('ms','',regex=True)
 df['Wind Speed (m/s)'] = df['Wind Speed (m/s)'].astype(int)
@@ -381,7 +381,7 @@ ax8[0].minorticks_on()
 # Add grid minor gird lines with a dashed, semi transparent appearance. 
 ax8[0].grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
 
-fn2 = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM_output/v8_stability_calc/tropical_step_75m.txt'
+fn2 = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM-Viz/v8_stability_calc/tropical_step_75m.txt'
 df2 = pd.read_csv(fn2)
 df2=df2.replace('ms','',regex=True)
 df2['Wind Speed (m/s)'] = df2['Wind Speed (m/s)'].astype(int)
@@ -435,8 +435,8 @@ fig9.autolayout = False
 # order = 
 colors_vent_speed = ([0/255, 119/255, 187/255],[51/255, 187/255, 238/255],[0/255, 153/255, 136/255],[238/255, 119/255, 51/255],[204/255, 51/255, 17/255])
 for rad_count, rad_value in enumerate(vent_rad):
-    if rad_value == 127:
-        rad_value = '127_5'
+    if rad_value == 22:
+        rad_value = '22_5'
     new_df = flattened_df[(flattened_df["Wind Speed (m/s)"] == 0) & (flattened_df["Vent Radius (m)"] == rad_value)].groupby('Vent speed (m/s)')
 
 

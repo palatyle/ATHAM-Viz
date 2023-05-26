@@ -31,11 +31,11 @@ function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,la
     % as well as a .mat file with the PDC directionality for each sumulation
 
     % EXAMPLES:
-    % The following will visualize all tropical runs in the directory /Volumes/MATHAM3 with a vent diameter of 30m. The isovalues are set to 1 and .001
-    % ATHAM_viz_multi('ash3',[1,.001],false,'/Volumes/MATHAM3/',["30m"],["tropical"],false, false, false)
+    % The following will visualize all tropical runs in the directory /Volumes/MATHAM3 with a vent diameter of 22.5 m. The isovalues are set to 1 and .001
+    % ATHAM_viz_multi('ash3',[1,.001],false,'/Volumes/MATHAM3/',["22_5m"],["tropical"],false, false, false)
 
-    % The following will visualize all tropical runs in the directory /Volumes/MATHAM3 with a vent diameter of 75m and 127.5m. The isovalue is set to .1
-    % ATHAM_viz_multi('ash3',[.1],false,'/Volumes/MATHAM3/',["75m","127_5m"],["tropical"],false, false, false)
+    % The following will visualize all tropical runs in the directory /Volumes/MATHAM3 with a vent diameter of 75m and 135m. The isovalue is set to .1
+    % ATHAM_viz_multi('ash3',[.1],false,'/Volumes/MATHAM3/',["75m","135m"],["tropical"],false, false, false)
 
     % Make output directory for PDC directionality output
     mkdir(strcat(upper_dir,'direction_out'))
@@ -54,9 +54,9 @@ function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,la
             for i = 1:length(dirs)
                 fn = dirs{i};
                 % Set stability plane calculation height based on vent diameter
-                if vent_diam(j) == "20m" || vent_diam(j) == "30m"
+                if vent_diam(j) == "15m" || vent_diam(j) == "22_5m"
                     plane_offset = 1;
-                elseif vent_diam(j) == "75m" || vent_diam(j) == "127_5m" || vent_diam(j) == "303m" 
+                elseif vent_diam(j) == "75m" || vent_diam(j) == "135m" || vent_diam(j) == "315m" 
                     plane_offset = 0;
                 end 
                 
@@ -72,7 +72,7 @@ function ATHAM_viz_multi(tracer_name,isovalue,domain_flux,upper_dir,vent_diam,la
                 vent_speed = split_dir{6};
                 
                 % Get wind speed
-                if split_dir{3} == "127_5m"
+                if split_dir{3} == "22_5m"
                     wind_speed = split_fn{5};
                 else
                     wind_speed = split_fn{4};
