@@ -16,14 +16,14 @@ function [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH,
 % flux_ratio_med = median stability flux ratio over the course of the simulation
 % flux_ratio_SD = standard deviation of stability flux ratio over the course of the simulation
 % max_plume_height = maximum plume height over the course of the simulation (km)
-% NBH = Neutral Buoyancy Height of the plume over the course of the simulation (km) NOTE: currently unreliable)_
+% NBH = Neutral Buoyancy Height of the plume over the course of the simulation (km) NOTE: currently unreliable)
 % NBH_err = error in NBH (km) NOTE: currently unreliable
 % gif_str = string of the name of the animated gif created by this function
 
 % EXAMPLES:
-% The following will visualize the ATHAM netcdf file located at /Volumes/MATHAM3/tropical/30m/50ms/tropical_30m_50ms_0ms.
+% The following will visualize the ATHAM netcdf file located at /Volumes/MATHAM3/tropical/15m/50ms/tropical_15m_50ms_0ms.
 % It will visualzie the ash3 traceer at two isosurface (.1 and .001 g ash/kg air) and offsets the stabiltiy plane by 1 index value.
-% [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts("/Volumes/MATHAM3/tropical/30m/50ms/tropical_30m_50ms_0ms", 'ash3', [.1,.001], false, 1, false, false, false) 
+% [flux_ratio_mean, flux_ratio_med, flux_ratio_SD, max_plume_height, NBH, NBH_err] = ATHAM_viz_ts("/Volumes/MATHAM3/tropical/15m/50ms/tropical_15m_50ms_0ms", 'ash3', [.1,.001], false, 1, false, false, false) 
 
 %% before loop!
 

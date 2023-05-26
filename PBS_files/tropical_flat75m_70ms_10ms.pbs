@@ -31,6 +31,6 @@ module load pnetcdf/1.12.2
 #### f = output file prefix                 
 ####----------------------------------------
 
-mpirun ./exec/atham_st -i IO_ref -o /scratch/palatyle/tropical_flat75m_70ms_10ms -f atham -a INPUT_atham_setup -p INPUT_profile_10mps_trop_flat -v INPUT_volcano_75_70 -d INPUT_dynamic_setup
+mpirun ./exec/atham_st -i IO_ref -o /scratch/palatyle/tropical_flat75m_70ms_10ms -f atham -a INPUT_atham_setup_small_grid -p INPUT_profile_10mps_trop_flat -v INPUT_volcano_75_70 -d INPUT_dynamic_setup
 
 

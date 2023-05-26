@@ -3,16 +3,16 @@ clear all
 
 % Load in fine and coarse grid geometry files
 load('/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/fine_geo.mat')
-load('/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/coarse_geo.mat')
-
-x_coarse = x(row_x);
-y_coarse = y(row_y);
-
 x_fine = x(row_x);
 y_fine = y(row_y);
 
+load('/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/coarse_geo.mat')
+x_coarse = x(row_x);
+y_coarse = y(row_y);
+
+
 % Get list of all files in directory
-cd '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/direction_out'
+cd '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM-Viz/direction_out'
 files = dir();
 files = files(~ismember({files.name},{'.','..','.DS_Store'}));
 
@@ -34,9 +34,9 @@ for i = 1:length(files)
     temp.dir_matrix = abs(temp.dir_matrix);
     planes(i).data = temp.dir_matrix;
     planes(i).atmosphere = string(split{1});
-    if str2double(split{2}) == 127
+    if str2double(split{2}) == 22
         split{5}(letter_ind{5}) = [];
-        planes(i).vent = 127.5;
+        planes(i).vent = 22.5;
         planes(i).v_velocity = str2double(split{4});
         planes(i).windspeed = str2double(split{5});
     else
@@ -48,12 +48,12 @@ for i = 1:length(files)
     
 end
 
-vents = [20, 30, 75, 127.5, 303];
+vents = [15, 22.5, 75, 135, 315];
 
 % Plot each direction plamne
 for i = 1:length(vents)
     input_plane = planes([planes.vent]==vents(i));
-    if vents(i) == 20
+    if vents(i) == 15
         plane_plot(input_plane,vents(i),x_fine,y_fine)
     else
         plane_plot(input_plane,vents(i),x_coarse,y_coarse)
@@ -63,7 +63,7 @@ end
 
 
 function plane_plot(plane_filt,vent_size,X,Y)
-    if vent_size == 20
+    if vent_size == 15
         window_size = 15;
     else
         window_size = 8;

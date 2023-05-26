@@ -4,7 +4,7 @@
 
 # Declare parameters to loop through
 declare -a lats=("tropical" "mid-lat" "polar")
-declare -a ventsizes=("75" "127_5" "303")
+declare -a ventsizes=("75" "135" "315")
 declare -a velocities=("50" "70" "100" "150" "300")
 declare -a windspeeds=("0" "5" "10" "15" "20" "25" "30" "35" "40" "45" "50")
 
@@ -22,17 +22,17 @@ for lat in ${lats[@]}; do
                 pbs_name=${lat}_${ventsize}m_${velocity}ms_${windspeed}ms.pbs
 
                 # Copy master pbs file
-                cp pbsfile.pbs $pbs_name
+                cp ../PBS_files/pbsfile.pbs $pbs_name
 
                 # Edit -N flag in new pbs file
                 N_var='8s/.*/''#PBS -N '${lat}_${ventsize}m_${velocity}ms_${windspeed}ms'/'
-                sed -i "$N_var" $pbs_name
+                sed -i '' "$N_var" $pbs_name
 
                 # Create string to edit run line
 
                 # set output directory and create it 
                 out_dir='/scratch/palatyle/'${lat}_${ventsize}m_${velocity}ms_${windspeed}ms
-                mkdir $out_dir
+                # mkdir $out_dir
                 o_flag='-o '$out_dir
                 
                 # Set atmospheric profile flag based off which latitude loop we're in
@@ -49,13 +49,13 @@ for lat in ${lats[@]}; do
 
                 # Set run line 
                 run_line='34s|.*|mpirun ./exec/atham_st '${i_flag}${o_flag}${f_flag}${a_flag}${p_flag}${v_flag}${d_flag}'|'
-                sed -i "$run_line" $pbs_name
+                sed -i '' "$run_line" $pbs_name
 
 
                 # Put into pbs queue 
-                qsub $pbs_name
+                # qsub $pbs_name
 
-                echo $pbs_name
+                # echo $pbs_name
             done
         done
     done
