@@ -33,7 +33,7 @@
 
 `batch_pbs_scripts/batch_pbs_create_step.sh` -- Shell script used to create ATHAM simulations for the step function atmospheric profile. Also submits to PBS queue.
 
-`batch_pbs_scripts/batch_small_vent.sh` -- Shell script used to create ATHAM simulations for vent sizes of 15 and 22.5 meters meters. Also submits to PBS queue.
+`batch_pbs_scripts/batch_small_vent.sh` -- Shell script used to create ATHAM simulations for vent sizes of 15 and 22.5 meters. Also submits to PBS queue.
 
-`batch_pbs_scripts/batch_small_vent_144.sh` -- Shell script used to create ATHAM simulations for vent sizes of 15 and 22.5 meters meters running on 144 cores. Also submits to PBS queue.
+`batch_pbs_scripts/batch_small_vent_144.sh` -- Shell script used to create ATHAM simulations for vent sizes of 15 and 22.5 meters running on 144 cores. Also submits to PBS queue.
 
