@@ -5,7 +5,7 @@
 #PBS -j oe
 #PBS -l place=free
 
-#PBS -N polar_75m_300ms_35ms_small_var
+#PBS -N tropical_75m_300ms_35ms_mod_up
 #PBS -m abe
 #PBS -M palatyle@isu.edu
 #PBS -l select=2:ncpus=32:mpiprocs=32
@@ -31,6 +31,6 @@ module load pnetcdf/1.12.2
 #### f = output file prefix                 
 ####----------------------------------------
 
-mpirun /home/palatyle/ATHAM_IO/exec/atham_st -i /home/palatyle/ATHAM_IO/IO_ref -o /scratch/palatyle/polar_75m_300ms_35ms_small_var -f atham -a INPUT_atham_setup -p INPUT_profile_35mps_polar_small_var -v INPUT_volcano_75_300 -d INPUT_dynamic_setup
+mpirun /home/palatyle/ATHAM_IO/exec/atham_st -i /home/palatyle/ATHAM_IO/IO_ref -o /scratch/palatyle/tropical_75m_300ms_35ms_mod_up -f atham -a INPUT_atham_setup -p INPUT_profile_35mps_trop_mod_up -v INPUT_volcano_75_300 -d INPUT_dynamic_setup
 
 
