@@ -1,7 +1,6 @@
 #!/bin/bash
 # Sets up and submits a batch of ATHAM runs to the PBS queue for the step function wind profile
 
-
 # Declare parameters to loop through
 declare -a lats=("tropical")
 declare -a ventsizes=("75")
