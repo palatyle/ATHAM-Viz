@@ -1,7 +1,6 @@
 import os
-import time
-from fnmatch import fnmatch
-
+from pathlib import Path
+from tqdm import tqdm
 import xarray as xr
 
 
@@ -34,18 +33,16 @@ def compress(infile,outfile):
     os.rename(outfile,infile)
     return None
     
-root = '/Volumes/MATHAM_2/mid_lat'
+scratch_path = Path('/scratch/palatyle/')
 pattern = "*_MOV.nc"
 
-paths = []
-# Get paths of all netcdf files in root directory
-for path, subdirs, files in os.walk(root):
-    for name in files:
-        if fnmatch(name, pattern):
-            paths.append(os.path.join(path,name))
 
-# Loop through all netcdf files and compress
-for idx, path in enumerate(paths):
-    print("Progress: " + str(idx) +"/" + str(len(paths)))
-    compress(path,path+'compress.nc')
+nc_files = list(scratch_path.glob('tropical_step*/*_MOV.nc'))
+
+for file in tqdm(nc_files):
+    size = file.stat().st_size/1e9 # get size and convert from b -> Gb
+    if size < 16.0:
+        compress(file,file.parent/'atham_netCDF_MOV_compress.nc')
+    else:   
+        print(file)
 
