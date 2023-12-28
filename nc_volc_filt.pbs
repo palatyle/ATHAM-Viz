@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -j oe
+#PBS -k doe
+
+#PBS -N volc_filt
+#PBS -m abe
+#PBS -M palatyle@isu.edu
+#PBS -l select=1:mem=150gb
+#PBS -l walltime=5:00:00
+
+#PBS -P edu_res
+
+
+cd $PBS_O_WORKDIR
+source /etc/profile.d/modules.sh
+
+module load python/3.10-mambaforge-2023-10-21
+conda activate GCM2MATHAM
+
+python netcdf_compression.py

@@ -16,10 +16,10 @@
 cd $PBS_O_WORKDIR
 source /etc/profile.d/modules.sh
 
-module load netcdf/c-4.7.4_gcc9.3.0
-module load netcdf/f-4.7.4_gcc9.3.0
-module load pnetcdf/1.12.2
+module load parallel-netcdf/1.12.3-gcc-12.3.0-hi72
+module load netcdf-fortran/4.6.1-gcc-12.3.0-6scz
 
+export LD_LIBRARY_PATH=/apps/spack/opt/gcc-12.3.0/netcdf-fortran-4.6.1-6sczhswldvzj3gr3pckslhlowc7nsqy4/lib:/apps/spack/opt/gcc-12.3.0/parallel-netcdf-1.12.3-hi72yggsmdcmrpbmwkwqqvtfhlvg3iak/lib:$LD_LIBRARY_PATH
 ####----------------------------------------
 #### Flag key for non-default IO storage:  
 #### i = input directory                    
@@ -31,6 +31,6 @@ module load pnetcdf/1.12.2
 #### f = output file prefix                 
 ####----------------------------------------
 
-mpirun /home/palatyle/ATHAM_IO/exec/atham_st -i /home/palatyle/ATHAM_IO/IO_ref -o /scratch/palatyle/polar_75m_300ms_35ms_mod_down -f atham -a INPUT_atham_setup -p INPUT_profile_35mps_polar_mod_down -v INPUT_volcano_75_300 -d INPUT_dynamic_setup
+mpirun /home/palatyle/ATHAM_IO/exec/atham -i /home/palatyle/ATHAM-Viz/IO_ref -o /scratch/palatyle/polar_75m_300ms_35ms_mod_down -f atham -a INPUT_atham_setup -p INPUT_profile_35mps_polar_mod_down -v INPUT_volcano_75_300 -d INPUT_dynamic_setup
 
 
