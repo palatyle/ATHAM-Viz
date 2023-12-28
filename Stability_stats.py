@@ -69,22 +69,27 @@ for lat_idx, lat in enumerate(lats):
         vent_speed_group = dataframes_dict[lat + '_' + str(vent)].groupby('Vent speed (m/s)') # group by vent speed
 
         colors_vent_speed = ([0/255, 119/255, 187/255],[51/255, 187/255, 238/255],[0/255, 153/255, 136/255],[238/255, 119/255, 51/255],[204/255, 51/255, 17/255])
+        shapes_vent_speed = ['-o','-o','-s','-s','-^']
+        face_colors = [colors_vent_speed[0],'white',colors_vent_speed[2],'white',colors_vent_speed[4]]
         
         for count, value in enumerate(vent_vel):
             ax1[idx].errorbar(vent_speed_group.get_group(value)['Wind Speed (m/s)'],
                 vent_speed_group.get_group(value)['stability mean'],
                 yerr=vent_speed_group.get_group(value)['stability SD']*100,
                 fmt = 'none',
-                ecolor = 'black',
-                barsabove=False)
-            
+                ecolor = colors_vent_speed[count],
+                capsize=5,
+                barsabove=True)
+        for count, value in enumerate(vent_vel):
             vent_speed_group.get_group(value).sort_values(by=['Wind Speed (m/s)']).plot(
             kind='line',
-            style = '-o', 
+            style = shapes_vent_speed[count],
             x='Wind Speed (m/s)',
             y='stability mean', 
             legend = False,  
             grid = True, 
+            fillstyle='full',
+            markerfacecolor=face_colors[count],
             color=colors_vent_speed[count],
             ax=ax1[idx])
 
@@ -434,6 +439,8 @@ fig9.autolayout = False
 
 # order = 
 colors_vent_speed = ([0/255, 119/255, 187/255],[51/255, 187/255, 238/255],[0/255, 153/255, 136/255],[238/255, 119/255, 51/255],[204/255, 51/255, 17/255])
+shapes_vent_speed = ['-o','-o','-s','-s','-^']
+face_colors = [colors_vent_speed[0],'white',colors_vent_speed[2],'white',colors_vent_speed[4]]
 for rad_count, rad_value in enumerate(vent_rad):
     if rad_value == 22:
         rad_value = '22_5'
@@ -442,11 +449,25 @@ for rad_count, rad_value in enumerate(vent_rad):
 
     for vel_count, vel_value in enumerate(vent_vel):
         try:
-            new_df.get_group(vel_value).plot(kind='line',style='-o',x='Atmosphere',y='stability mean',legend=False,color=colors_vent_speed[vel_count],ax = ax9[rad_count])
+            ax9[rad_count].errorbar(new_df.get_group(vel_value)['Atmosphere'],
+                new_df.get_group(vel_value)['stability mean'],
+                yerr=new_df.get_group(vel_value)['stability SD']*100,
+                fmt = 'none',
+                ecolor = colors_vent_speed[vel_count],
+                capsize=5,
+                barsabove=False)
+            
+
         except KeyError:
             print("Missing data for vent speed: " + str(vel_value) + " and vent radius: " + str(rad_value))
             continue
-
+        
+    for vel_count, vel_value in enumerate(vent_vel):
+        try:
+            new_df.get_group(vel_value).plot(kind='line',style=shapes_vent_speed[vel_count],grid=True,x='Atmosphere',y='stability mean',legend=False,color=colors_vent_speed[vel_count],fillstyle='full', markerfacecolor=face_colors[vel_count],ax = ax9[rad_count])
+        except KeyError:
+            print("Missing data for vent speed: " + str(vel_value) + " and vent radius: " + str(rad_value))
+            continue
     ax9[rad_count].set_title('R = '+str(rad_value)+' m')
     ax9[rad_count].minorticks_on()
     ax9[rad_count].set_ylim(0,100)
@@ -459,4 +480,154 @@ fig9.supylabel('Stability (%)', x=0)
 
 fig9.savefig(input_dir+ "Atmos_comparison.pdf", format = 'pdf',bbox_inches=None, dpi=300)
 
+
+# %% Low alt winds vs high alt winds smallvent
+fn = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM-Viz/v8_stability_calc/tropical_flat_22_5m_cleaned.txt'
+df = pd.read_csv(fn)
+df=df.replace('ms','',regex=True)
+df['Wind Speed (m/s)'] = df['Wind Speed (m/s)'].astype(int)
+df['Vent speed (m/s)'] = df['Vent speed (m/s)'].astype(int)
+df['stability mean'] = df['stability mean'] * 100
+
+
+vent_speed_group = df.groupby('Vent speed (m/s)') # group by vent speed
+fig10, ax10 = plt.subplots(2,figsize=(10,8),sharex=True)
+# fig10.autolayout = False
+
+# colors_vent_speed_flat = plt.cm.viridis(np.linspace(0,1,num=vent_speed_group.ngroups)) # get colors for each group
+colors_vent_speed_flat = ([0/255, 153/255, 136/255],[0/255, 119/255, 187/255],[204/255, 51/255, 17/255])
+colors_vent_speed = ([0/255, 119/255, 187/255],[51/255, 187/255, 238/255],[0/255, 153/255, 136/255],[238/255, 119/255, 51/255],[204/255, 51/255, 17/255])
+shapes_vent_speed = ['-o','-o','-s','-s','-^']
+face_colors = [colors_vent_speed[0],'white',colors_vent_speed[2],'white',colors_vent_speed[4]]
+
+
+for count,value in enumerate(vent_vel):
+    vent_speed_group.get_group(value).sort_values(by=['Wind Speed (m/s)']).plot(
+    kind='line',
+    style=shapes_vent_speed[count],
+    x='Wind Speed (m/s)',
+    y='stability mean', 
+    legend = False,  
+    grid = True, 
+    color=colors_vent_speed[count],
+    fillstyle='full',
+    markerfacecolor=face_colors[count],
+    ax=ax10[0])
+    
+
+    ax10[0].errorbar(vent_speed_group.get_group(value)['Wind Speed (m/s)'],
+        vent_speed_group.get_group(value)['stability mean'],
+        yerr=vent_speed_group.get_group(value)['stability SD']*100,
+        fmt = 'none',
+        ecolor = colors_vent_speed[count],
+        capsize=5,
+        barsabove=True)
+
+
+# Add ticks and labels based on wind_speed vector
+# ax10[0].set_xticks(wind_speed)
+ax10[0].minorticks_on()
+# Add grid minor gird lines with a dashed, semi transparent appearance. 
+ax10[0].grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
+ax10[0].set_title('Uniform Winds',weight=700, stretch = 'condensed')
+ax10[0].set_ylabel('Stability (%)')
+ax10[0].set_ylim(-2,102)
+ax10[0].set_xlim(-0.5,30.5)
+
+fn2 = '/Users/tylerpaladino/Documents/ISU/Thesis/ATHAM_wind/ATHAM-Viz/v8_stability_calc/tropical_step_22_5m_cleaned.txt'
+df2 = pd.read_csv(fn2)
+df2=df2.replace('ms','',regex=True)
+df2['Wind Speed (m/s)'] = df2['Wind Speed (m/s)'].astype(int)
+df2['Vent speed (m/s)'] = df2['Vent speed (m/s)'].astype(int)
+df2['stability mean'] = df2['stability mean'] * 100
+
+
+vent_speed_group = df2.groupby('Vent speed (m/s)') # group by vent speed
+
+for count,value in enumerate(vent_vel):
+    vent_speed_group.get_group(value).sort_values(by=['Wind Speed (m/s)']).plot(
+    kind='line',
+    style=shapes_vent_speed[count],
+    x='Wind Speed (m/s)',
+    y='stability mean', 
+    legend = False,  
+    grid = True, 
+    color=colors_vent_speed[count],
+    fillstyle='full',
+    markerfacecolor=face_colors[count],
+    ax=ax10[1])
+    
+
+    ax10[1].errorbar(vent_speed_group.get_group(value)['Wind Speed (m/s)'],
+        vent_speed_group.get_group(value)['stability mean'],
+        yerr=vent_speed_group.get_group(value)['stability SD']*100,
+        fmt = 'none',
+        ecolor = colors_vent_speed[count],
+        capsize=5,
+        barsabove=True)
+
+
+# Add ticks and labels based on wind_speed vector
+ax10[1].set_xticks(wind_speed)
+ax10[1].minorticks_on()
+# Add grid minor gird lines with a dashed, semi transparent appearance. 
+ax10[1].grid(which='minor', linestyle='--', linewidth='0.25', color='grey', alpha=0.5)
+ax10[1].set_title('High Altitude Winds (>=16km)',weight=700, stretch = 'condensed')
+ax10[1].set_ylabel('Stability (%)')
+ax10[1].set_ylim(-2,102)
+ax10[1].set_xlim(-0.5,30.5)
+
+
+
+
+
+fig10.legend(vent_vel, ncol = len(vent_vel), borderpad = 0.3, frameon=True, fancybox=True, title='Vent Speed (m/s)', loc=8)
+fig10.tight_layout()
+fig10.subplots_adjust(top=0.95,bottom = 0.18)   
+# fig8.suptitle('Max Plume Height vs. Wind Speed',y=.99, fontsize = 22, weight=700, stretch = 'condensed')
+# fig10.supxlabel('Wind Speed (m/s)', x=0)
+fig10.savefig(input_dir+ "22_5m_tropical_flat_StabilityVsWind.pdf", format = 'pdf',bbox_inches=None, dpi=300)
+
+
+# %% Neri 1994 comparison plot
+fig11, ax11 = plt.subplots(figsize=(10,8),sharey=True)
+
+woods_88_5H = pd.read_csv('Woods_1988_5H2O.csv',header=None,names=['MER','vel'])
+woods_88_3H = pd.read_csv('Woods_1988_3H2O.csv',header=None,names=['MER','vel'])
+woods_88_1H = pd.read_csv('Woods_1988_1H2O.csv',header=None,names=['MER','vel'])
+
+Wilson_Walker_87_2H = pd.read_csv('Wilson_Walker_1987_2H2O.csv',header=None,names=['MER','vel'])
+
+Wilson_80_2H = pd.read_csv('Wilson_1980_2H2O.csv',header=None,names=['MER','vel'])
+
+Neri_94_0_8H = pd.read_csv('Neri_1994_0_8H2O.csv',header=None,names=['MER','vel'])
+Neri_94_1_6H = pd.read_csv('Neri_1994_1_6H2O.csv',header=None,names=['MER','vel'])
+
+
+
+lat_df = flattened_df[(flattened_df['Wind Speed (m/s)']==0) & (flattened_df['Atmosphere']=='tropical')]
+stability_mappable = ax11.scatter(lat_df['MER'],lat_df['Vent speed (m/s)'],s=50,c=lat_df['stability mean'])
+
+woods_88_5H.sort_values(by='MER').plot(kind='line',x='MER',y='vel',ax=ax11,style='k--',label='Woods 1988',legend=False)
+woods_88_3H.sort_values(by='MER').plot(kind='line',x='MER',y='vel',ax=ax11,style='k--',legend=False)
+woods_88_1H.sort_values(by='MER').plot(kind='line',x='MER',y='vel',ax=ax11,style='k--',legend=False)
+
+Wilson_Walker_87_2H.sort_values(by='MER').plot(kind='line',x='MER',y='vel',ax=ax11,style='k:',label='Wilson & Walker 1987',legend=False)
+
+Wilson_80_2H.sort_values(by='MER').plot(kind='line',x='MER',y='vel',ax=ax11,style='k-.',label='Wilson 1980',legend=False)
+
+Neri_94_0_8H.sort_values(by='MER').plot(kind='line',x='MER',y='vel',ax=ax11,style='k-',legend=False)
+Neri_94_1_6H.sort_values(by='MER').plot(kind='line',x='MER',y='vel',ax=ax11,style='k-',label='Neri 1994',legend=False)
+
+
+ax11.set_xscale('log')
+ax11.set_xlabel('MER (kg/s)')
+ax11.set_ylabel('Vent Exit Velocity (m/s)')
+ax11.grid(True)
+ax11.set_title('Stability Curves For Mid-Lat Atmosphere')
+
+fig11.legend(loc='upper left')
+
+fig11.colorbar(stability_mappable,label='Stability (%)')
+fig11.savefig('stability_curves.pdf')
 print('pause')
