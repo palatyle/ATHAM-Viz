@@ -35,8 +35,14 @@ fn_data = 'atham_netCDF_MOV.nc';
 fn_dep = 'atham_netCDF_PIC.nc';
 
 % Setting up the figure
-ax1 = subplot(1,2,1);
-ax2 = subplot(1,2,2);
+f = figure();
+ax1 = subplot(1,2,1,'Parent',f);
+ax2 = subplot(1,2,2,'Parent',f);
+
+f_test = figure();
+% ax_test=axes('Parent',f_test);
+ax_test1 = subplot(2,1,1,'Parent',f_test);
+ax_test2 = subplot(2,1,2,'Parent',f_test);
 
 xlabel([ax1 ax2], 'X Distance [km]')
 ylabel([ax1 ax2], 'Y Distance [km]')
@@ -182,6 +188,19 @@ gif_str = get_gif_str(fn, isovalue);
 dir_matrix = zeros(size(area_plane));
 
 disp(strcat('Currently visualizing',{' '}, gif_str))
+% [~,transition_alt] = find_transition_point(x, y, z, den_full)
+% 
+% % Grab a vertical profile above the vent at the end of the simulation.
+% % This is the profile of plume density
+% plume_centerline_den = squeeze(den_full(length(x)/2,length(y)/2,:,end));
+% 
+% % Grab a vertical profile above the vent at beginning of simulation.
+% % This is the ambient atmopsheric density profile
+% initial_atmos = squeeze(den_full(length(x)/2,length(y)/2,:,1));
+% 
+% % Find all non zero indices (i.e. get rid of topography that are just
+% % zeros.
+% non_zero_indices = find(plume_centerline_den);
 
 %% In loop
 % Loop through timesteps
@@ -271,7 +290,7 @@ for i = 1:time_num
     end
 
     % Calculate stability of plume
-    [flux_ratio(i), stability(i)] = stability_calc(grid_mass_flux_ash, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, i);
+    flux_ratio(i) = stability_calc(grid_mass_flux_ash, ash1, ash2, ash3, ash4, row_x, row_y, plane_height, rad_dist_bool, i);
     
     % Draw text objects 
     text_objs = draw_text(ax1, x, y, z, i, time_arr, flux_ratio(i), max_plume_height);
@@ -282,9 +301,38 @@ for i = 1:time_num
     shg
 
     create_gif(i, strcat(gif_str,'.gif'))
+    center_pt = 42.8357;
+    w_slice = slice(ax_test1,double(xmg),double(ymg),double(zmg),squeeze(w_vector(:,:,:,i)),double(x(length(x)/2)),double(y(length(y)/2)),[]);
 
+    view(ax_test1,360,0)
+    shading(ax_test1,'interp')
+    xlim(ax_test1, [center_pt-1,center_pt+1])
+    % xlim(ax_test1, [(max(x)/2)-1,(max(x)/2)+1])
+    % ylim(ax_test1, [(max(y)/2)-1,(max(y)/2)+1])
+
+    % ylim(ax_test1, [41.762849693620424,43.950247580686224])
+    zlim(ax_test1, [1.552158404018752,2.76737945238865])
+
+    % xlim(ax_test1, [42.070570107283075,44.50101220402287])
+    % ylim(ax_test1, [41.762849693620424,43.950247580686224])
+    % zlim(ax_test1, [1.552158404018752,2.76737945238865])
+    % view(ax_test,1.242000115306529e+02,12.017517877091125)
+
+    % xlim(ax_test, [42.82364882173706,42.90530785430779])
+    % ylim(ax_test, [41.00312385915186,44.39879521784732])
+    % zlim(ax_test, [1.431135471093973,3.317619559257996])
+
+    % xlim(ax_test, [21.36738835933822,21.453425060379974])
+    % ylim(ax_test, [20.624392648708003,22.225677271934526])
+    % zlim(ax_test, [1.40368531814225,3.182890455060615])
+
+    plot(ax_test2,x,squeeze(pnew(:,length(y)/2,50,i)))
+    xlim(ax_test2,[center_pt-1,center_pt+1])
+
+    above(i) = sum(sum(sum(ash1(:,:,plane_height:end,i))))+sum(sum(sum(ash2(:,:,plane_height:end,i))))+sum(sum(sum(ash3(:,:,plane_height:end,i))))+sum(sum(sum(ash4(:,:,plane_height:end,i))));
+    below(i) = sum(sum(sum(ash1(:,:,1:plane_height,i))))+sum(sum(sum(ash2(:,:,1:plane_height,i))))+sum(sum(sum(ash3(:,:,1:plane_height,i))))+sum(sum(sum(ash4(:,:,1:plane_height,i))));
     % Delete all patches and lights so that they don't overlap on next timestep
-    delete(findall(gcf,'Type','light'))
+    delete(findall(f,'Type','light'))
     if quiver_overlay
         patches = {p_ash p_ash_z q};
     else
@@ -614,10 +662,10 @@ function set_figure_props(fontsize)
     Returns
     ----------
     %}
-    set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0.04, 1, 0.96]);
-    set(findall(gcf,'type','text'),'FontSize',fontsize)
+    set(f, 'Units', 'Normalized', 'OuterPosition', [0, 0.04, 1, 0.96]);
+    set(findall(f,'type','text'),'FontSize',fontsize)
     
-    ax_num = findall(gcf, 'type', 'axes');
+    ax_num = findall(f, 'type', 'axes');
     for i_func = 1:length(ax_num)
         set(ax_num(i_func), 'Fontsize', fontsize)
     end
@@ -959,6 +1007,29 @@ function plume_height = find_plume_height(ash_threshold,z)
     end
 end
 
+function [x_inter,y_inter] = find_transition_point(x, y, z, den_full)
+    % Grab a vertical profile above the vent at the end of the simulation.
+    % This is the profile of plume density
+    plume_centerline_den = squeeze(den_full(length(x)/2,length(y)/2,:,end));
+
+    % Grab a vertical profile above the vent at beginning of simulation.
+    % This is the ambient atmopsheric density profile
+    initial_atmos = squeeze(den_full(length(x)/2,length(y)/2,:,1));
+
+    % Find all non zero indices (i.e. get rid of topography that are just
+    % zeros.
+    non_zero_indices = find(plume_centerline_den);
+
+    % Find all intersections between plume profile and atmos profile
+    [xi, yi] = polyxpoly(plume_centerline_den(non_zero_indices),z(non_zero_indices),initial_atmos(non_zero_indices),z(non_zero_indices));
+
+    % First element should be the first cross over point i.e. transition 
+    % point betweemn jet thrust and convective rise regions. 
+    x_inter = xi(1);
+    y_inter = yi(1);
+
+end
+
 function text_objs = draw_text(ax1, x, y, z, i, time_arr, flux_ratio, max_plume_height)
     %{
     Places text objects in 3D space on the plot. Text objects include
@@ -979,11 +1050,11 @@ function text_objs = draw_text(ax1, x, y, z, i, time_arr, flux_ratio, max_plume_
     %}
     
     % current timestep
-    text_objs{1} = text(ax1, double(max(x)), double(min(y)) + 1.5 , double(max(z)) - 1.5, strcat(num2str(round(time_arr(i))),' s'));
+    text_objs{1} = text(ax1, double(max(x)), double(min(y)) + 1.5 , double(max(z)) - 1.5, strcat('Sim time: ',' ',num2str(round(time_arr(i))),' s'));
     % Stability ratio
-    text_objs{2} = text(ax1, double(max(x)), double(min(y)) + 1.5 , double(max(z)) - 4.5, strcat('stability ratio: ',' ', num2str(flux_ratio)));
+    text_objs{2} = text(ax1, double(max(x)), double(min(y)) + 1.5 , double(max(z)) - 4.5, strcat('stability ratio: ',' ', num2str(round(flux_ratio,2))));
     % Maximum plume height
-    text_objs{3} = text(ax1, double(max(x)), double(max(y)) - 32, double(max(z)) - 1.5, strcat('Plume height: ', num2str(max_plume_height),' km'));
+    text_objs{3} = text(ax1, double(max(x)), double(max(y)) - 25, double(max(z)) - 1.5, strcat('Plume height: ', num2str(round(max_plume_height,2)),' km'));
 end
 
 function domain_flux_calc(ash1, ash2, ash3, ash4, time_num, z)
@@ -1181,7 +1252,7 @@ function create_gif(i,gif_str)
     %}
 
     % Get frame from current figure and add it to the gif
-    F = getframe(gcf);
+    F = getframe(f);
     im = frame2im(F);
     [imind,cm] = rgb2ind(im,256);
     if i == 1 
