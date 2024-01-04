@@ -1,11 +1,11 @@
 # ATHAM-Viz
 
-## Scripts used in Paladino et al. (2023)
+## Scripts used in Paladino et al. (2024)
 `ATHAM_viz_multi.m` -- Script to visualize batches of ATHAM simulations using `ATHAM_viz_ts.m`
 
 `ATHAM_viz_ts.m` -- Script to visualize individual ATHAM simulation.
 
-`Stability_stats.py` -- Python script to visualize stats from ATHAM viz scripts. 
+`Stability_stats.py` -- Python script to visualize stats from ATHAM viz scripts. Creats many of the figures in Paladino et al. (2024)
 
 `netcdf_compression.py` -- Python script to compress multiple ATHAM netCDF files at once.
 
@@ -17,7 +17,7 @@
 `fine_geo.mat` -- .mat file containing geometry of the ATHAM grid for the fine grid used for smaller vent radii.
 
 ## Inputs
-`IO_ref/` -- Input files for ATHAM. 
+`IO_ref/` -- Input files for ATHAM incluidng atmospheric profiles and volcano inputs. 
 
 `PBS_files/` -- Directory containing all PBS submission files used in simulations. These submission files reference inputs in `IO_ref/`
 
