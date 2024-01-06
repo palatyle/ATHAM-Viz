@@ -26,6 +26,8 @@
 
 `v8_stability_calc/` -- Directory containing the stability output from `ATHAM_viz_multi.m`
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10439779.svg)](https://doi.org/10.5281/zenodo.10439779) -- Repository of all animations for every simulation conducted in Paladino et al. 2024b
+
 ## Helper shell scripts
 `batch_pbs_scripts/batch_pbs_create.sh` -- Main shell script used to create ATHAM simulations for vent sizes of 75, 135, and 315 meters. Also submits to PBS queue.
 
